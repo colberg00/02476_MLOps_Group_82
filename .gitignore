@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Data (do not commit raw/processed data)
+data/raw/
+data/processed/

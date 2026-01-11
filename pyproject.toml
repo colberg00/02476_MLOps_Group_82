@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mlops_project"
+name = "mlops"
 version = "0.0.1"
 description = "MLOps project for group 82"
 authors = [

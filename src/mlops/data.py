@@ -9,6 +9,10 @@ import pandas as pd
 import typer
 from torch.utils.data import Dataset
 
+from typing import Union
+
+import pandas as pd
+
 
 # Hugging Face direct download URL for the CSV
 HF_CSV_URL = (
@@ -18,8 +22,7 @@ HF_CSV_URL = (
 # Output filename inside output_folder
 OUTPUT_FILENAME = "processed.csv"
 
-
-def _download_csv_if_missing(dest: Path) -> None:
+def _download_csv_if_missing(dest: Union[str, Path]) -> None:
     """
     Download the dataset CSV from Hugging Face if it does not exist at `dest`.
 
@@ -27,10 +30,22 @@ def _download_csv_if_missing(dest: Path) -> None:
     ----------
     dest:
         File path where the raw CSV should be stored (e.g. data/raw/url_only_data_extra.csv).
+        Can be a str or pathlib.Path.
     """
+    dest = Path(dest)  # force Path, even if caller passes a string
+
+    # Guardrail: this function expects a FILE path, not a directory
+    if dest.exists() and dest.is_dir():
+        raise ValueError(
+            f"_download_csv_if_missing expected a file path, but got a directory: {dest}. "
+            "Pass the full CSV path (e.g. data/raw/<file>.csv)."
+        )
+
+    # If file already exists and is non-empty, do nothing
     if dest.exists() and dest.stat().st_size > 0:
         return
 
+    # Ensure parent folder exists
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     # Some servers are happier if we set a user-agent header
@@ -113,12 +128,37 @@ def _url_to_keywords(url: str) -> str:
     return " ".join(tokens)
 
 
+
+
 class MyDataset(Dataset):
     """My custom dataset."""
 
-    def __init__(self, data_path: Path) -> None:
-        # In this template, data_path is expected to point to the raw CSV file.
-        self.data_path = data_path
+    def __init__(self, data_path: Union[str, Path]) -> None:
+        # Accept str or Path, normalize immediately
+        p = Path(data_path)
+
+        # If a directory was passed (e.g. "data/raw"), resolve it to a CSV inside it
+        if p.exists() and p.is_dir():
+            preferred = p / "url_only_data_extra.csv"
+            if preferred.exists():
+                p = preferred
+            else:
+                csvs = sorted(p.glob("*.csv"))
+                if len(csvs) == 1:
+                    p = csvs[0]
+                elif len(csvs) == 0:
+                    raise ValueError(
+                        f"MyDataset got a directory ({p}) but found no .csv files inside it. "
+                        f"Pass the full CSV path (e.g. {p}/<file>.csv)."
+                    )
+                else:
+                    raise ValueError(
+                        f"MyDataset got a directory ({p}) with multiple .csv files. "
+                        f"Pass the exact CSV file path. Found: {[c.name for c in csvs[:10]]}"
+                    )
+
+        # Now p should be the raw CSV file path
+        self.data_path = p
 
         # Ensure raw file exists (download if needed)
         _download_csv_if_missing(self.data_path)
@@ -166,19 +206,14 @@ class MyDataset(Dataset):
             "keywords": row["keywords"],
         }
 
-    def process(self, output_folder: Path) -> None:
-        """process the raw data and save it to the output folder."""
+    def process(self, output_folder: Union[str, Path]) -> None:
+        """Process the raw data and save it to the output folder."""
+        output_folder = Path(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
         out_path = output_folder / OUTPUT_FILENAME
 
         # Save the full processed table (url + label + keywords)
         self.df.to_csv(out_path, index=False)
-
-
-def process(data_path: Path, output_folder: Path) -> None:
-    print("processing data...")
-    dataset = MyDataset(data_path)
-    dataset.process(output_folder)
 
 
 if __name__ == "__main__":

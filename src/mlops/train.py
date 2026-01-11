@@ -1,5 +1,5 @@
-from mlops_project.model import Model
-from mlops_project.data import MyDataset
+from mlops.model import Model
+from mlops.data import MyDataset
 
 def train():
     dataset = MyDataset("data/raw")

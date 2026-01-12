@@ -5,3 +5,6 @@
 # Data (do not commit raw/processed data)
 data/raw/
 data/processed/
+
+#Ignore the uv environment, which we call venv
+.venv/

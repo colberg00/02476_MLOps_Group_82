@@ -1,3 +1,3 @@
 ## Documentation
 
-Documentation for mlops_project
+Documentation for mlops_course_project

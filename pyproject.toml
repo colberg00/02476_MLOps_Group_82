@@ -1,15 +1,15 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.9.22,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
-name = "mlops"
+name = "mlops_course_project"
 version = "0.0.1"
-description = "MLOps project for group 82"
+description = "This project tries to identify whether an article headline belongs to NBC news or fox news"
 authors = [
-  { name = "oskar_smith_group_82", email = "your@email.com" },
+  { name = "mlops_Group82", email = "your@email.com" },
 ]
-
+license = { file = "LICENSE" }
 keywords = ["machine learning", "MLOps"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -17,19 +17,41 @@ classifiers = [
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-dynamic = ["dependencies", "optional-dependencies"]
+dependencies = [
+    "fastapi==0.115.6",
+    "torch==2.6.0",
+    "typer==0.15.1",
+    "uvicorn==0.34.0",
+]
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+[dependency-groups]
+dev = [
+    "coverage==7.6.9",
+    "invoke==2.2.0",
+    "pre-commit==4.1.0",
+    "pytest==8.3.4",
+    "ruff==0.1.3",
+    "mypy==1.19.1",
+    "mkdocs-material==9.7.1",
+    "mkdocstrings-python==2.0.1",
+]
 
-[tool.setuptools.dynamic.optional-dependencies]
-dev = {file = ['requirements_dev.txt']}
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+torchvision = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.ruff]
 line-length = 120
-
-[tool.ruff.lint]
-select = ["I", "N", "E", "W", ]
 
 [tool.coverage.run]
 omit = ["tests/*"]

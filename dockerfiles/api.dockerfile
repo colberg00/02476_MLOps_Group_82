@@ -1,16 +1,14 @@
-FROM python:3.12-slim AS base
+FROM ghcr.io/astral-sh/uv:python3.12-alpine AS base
 
-RUN apt update && \
-    apt install --no-install-recommends -y build-essential gcc && \
-    apt clean && rm -rf /var/lib/apt/lists/*
-
-COPY src src/
-COPY requirements.txt requirements.txt
-COPY requirements_dev.txt requirements_dev.txt
-COPY README.md README.md
+COPY uv.lock uv.lock
 COPY pyproject.toml pyproject.toml
 
-RUN pip install -r requirements.txt --no-cache-dir --verbose
-RUN pip install . --no-deps --no-cache-dir --verbose
+RUN uv sync --frozen --no-install-project
 
-ENTRYPOINT ["uvicorn", "src.mlops_project.api:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY src src/
+COPY README.md README.md
+COPY LICENSE LICENSE
+
+RUN uv sync --frozen
+
+ENTRYPOINT ["uv", "run", "uvicorn", "src.mlops_course_project.api:app", "--host", "0.0.0.0", "--port", "8000"]

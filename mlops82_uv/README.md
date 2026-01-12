@@ -1,7 +1,19 @@
 ````markdown
 # mlops_course_project
 
-This project tries to identify whether an article headline belongs to NBC news or fox news
+README file for Group 82.
+
+1. The dataset we will work with is: Jia555/cis519_news_urls. The short hash for the data we will use is: "6dca88d". 
+
+2. The model we would like to work with is microsoft/deberta-v3-base. We will fine tune it for our classification task.
+
+3. The overall goal of the project is to predict the news source by the keywords in the news article URL.
+
+The task it to do binary classification (Fox News vs NBC News). The input is the URL string, which we will engineer so that the news outlet titles are not found in them, and so that the text is solely the key words from the URL.
+
+We intend to use the full dataset to run on. It contains 40858 URLs, of which 19787 is from Fox News and 21721 is from NBC News. The data only contains a single column, which is the full URL from the original news article. The data is text. The output we seek is binary.
+
+We will use logistic regression as our baseline model (combined with TF-IDF).
 
 ## Project structure
 

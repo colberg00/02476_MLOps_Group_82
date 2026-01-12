@@ -3,11 +3,11 @@
 > Tick boxes as we complete items. Keep this file updated.
 
 ## Week 1
-- [ ] Create a git repository (M5)
-- [ ] Ensure all team members have write access (M5)
-- [ ] Create a dedicated environment and track packages (M2)
-- [ ] Create initial file structure (cookiecutter/template) (M6)
-- [ ] Implement `data.py` download + preprocessing (M6)
+- [X] Create a git repository (M5)
+- [X] Ensure all team members have write access (M5)
+- [X] Create a dedicated environment and track packages (M2)
+- [X] Create initial file structure (cookiecutter/template) (M6)
+- [X] Implement `data.py` download + preprocessing (M6)
 - [ ] Implement model in `model.py` + training in `train.py` and run it (M6)
 - [ ] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
 - [ ] Follow coding practices (pep8) (M7)

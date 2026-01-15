@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 import pandas as pd
 import typer
 from torch.utils.data import Dataset
+from typing import Callable
+from datasets import load_dataset
 
 
 @dataclass(frozen=True)
@@ -179,6 +181,23 @@ class MyDataset(Dataset):
         print(summary.to_string(index=False))
 
 
+def download_dataset(
+    data_path: Path = Path("data/cis519_news_urls"),
+) -> None:
+    """Download dataset from Hugging Face and save to local directory."""
+    print("Downloading dataset from Hugging Face...")
+    dataset = load_dataset('Jia555/cis519_news_urls')
+    
+    # Create data directory if it doesn't exist
+    data_path.mkdir(parents=True, exist_ok=True)
+    
+    # Save each split to CSV
+    for split_name, split_data in dataset.items():
+        df = split_data.to_pandas()
+        df.to_csv(data_path / f"{split_name}.csv", index=False)
+        print(f"Saved {split_name} to {data_path / f'{split_name}.csv'}")
+
+
 def preprocess(
     data_path: Path = Path("data/cis519_news_urls"),
     output_folder: Path = Path("data/processed"),
@@ -189,4 +208,8 @@ def preprocess(
 
 
 if __name__ == "__main__":
-    typer.run(preprocess)
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "download":
+        download_dataset()
+    else:
+        typer.run(preprocess)

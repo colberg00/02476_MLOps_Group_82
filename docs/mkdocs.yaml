@@ -1,5 +1,5 @@
-site_name: mlops_project
-site_author: oskar_smith_group_82
+site_name: mlops_course_project
+site_author: mlops_Group82
 docs_dir: source
 
 theme:

@@ -1,0 +1,11 @@
+seed: 42
+max_features: 50000
+ngram_min: 1
+ngram_max: 2
+min_df: 2
+C: 1.0
+max_iter: 2000
+
+processed_dir: data/processed
+model_out: models/baseline.joblib
+metrics_out: reports/baseline_metrics.json

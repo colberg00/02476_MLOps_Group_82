@@ -8,47 +8,47 @@
 - [X] Create a dedicated environment and track packages (M2)
 - [X] Create initial file structure (cookiecutter/template) (M6)
 - [X] Implement `data.py` download + preprocessing (M6)
-- [ ] Implement model in `model.py` + training in `train.py` and run it (M6)
-- [ ] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
-- [ ] Follow coding practices (pep8) (M7)
-- [ ] Add type hints + document essential parts (M7)
-- [ ] Setup version control for data / part of data (M8)
-- [ ] Add CLI commands where it makes sense (M9)
-- [ ] Construct one or more dockerfiles (M10)
-- [ ] Build dockerfiles locally and verify they work (M10)
-- [ ] Write one or more config files for experiments (M11)
-- [ ] Use Hydra for configs + hyperparameters (M11)
-- [ ] Profiling (M12)
-- [ ] Logging important events (M14)
+- [ ] Implement model in `model.py` + training in `train.py` and run it (M6) --- Kelvin kigger her
+- [X] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
+- [X] Follow coding practices (pep8) (M7)
+- [X] Add type hints + document essential parts (M7)
+- [ ] Setup version control for data / part of data (M8) --- Jakob
+- [½] Add CLI commands where it makes sense (M9) --- Kelvin
+- [ ] Construct one or more dockerfiles (M10) --- Kelvin
+- [ ] Build dockerfiles locally and verify they work (M10) --- Kelvin
+- [ ] Write one or more config files for experiments (M11) --- Oskar
+- [ ] Use Hydra for configs + hyperparameters (M11) --- Oskar
+- [ ] Profiling (M12) --- Christian
+- [ ] Logging important events (M14) --- Christian
 - [ ] Use Weights & Biases for metrics/artifacts (M14)
-- [ ] Consider hyperparameter sweep (M14)
+- [ ] Consider hyperparameter sweep (M14) --- Oskar
 - [ ] Use PyTorch Lightning (if applicable) (M15)
 
 ## Week 2
-- [ ] Unit tests for data code (M16)
-- [ ] Unit tests for model/training (M16)
-- [ ] Code coverage (M16)
-- [ ] CI on GitHub (M17)
-- [ ] CI caching + multi-os/python/torch testing (M17)
-- [ ] Add linting step in CI (M17)
-- [ ] Pre-commit hooks (M18)
+- [ ] Unit tests for data code (M16) --- Kelvin
+- [ ] Unit tests for model/training (M16) --- Kelvin
+- [ ] Code coverage (M16) --- Kelvin
+- [ ] CI on GitHub (M17) --- Christian
+- [ ] CI caching + multi-os/python/torch testing (M17) --- Christian
+- [ ] Add linting step in CI (M17) --- Christian
+- [ ] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)
-- [ ] Create GCP bucket for data + connect to DVC (M21)
-- [ ] Auto-build docker images workflow (M21)
-- [ ] Run training in GCP (Engine or Vertex AI) (M21)
-- [ ] FastAPI inference app (M22)
-- [ ] Deploy model in GCP (Functions or Run) (M23)
-- [ ] API tests + CI for API tests (M24)
-- [ ] Load testing (M24)
+- [ ] Create GCP bucket for data + connect to DVC (M21) --- Jakob
+- [ ] Auto-build docker images workflow (M21) --- Jakob
+- [ ] Run training in GCP (Engine or Vertex AI) (M21) --- Jakob
+- [ ] FastAPI inference app (M22) --- Christian
+- [ ] Deploy model in GCP (Functions or Run) (M23) --- Jakob
+- [ ] API tests + CI for API tests (M24) --- Christian
+- [ ] Load testing (M24) --- Christian + Oskar
 - [ ] Specialized deployment API (ONNX/BentoML) (M25)
-- [ ] Frontend for API (M26)
+- [ ] Frontend for API (M26) --- Nice to have
 
 ## Week 3
-- [ ] Robustness to data drift (M27)
-- [ ] Collect input-output data from deployed app (M27)
-- [ ] Deploy drift detection API (M27)
-- [ ] Add system metrics to API (M28)
+- [ ] Robustness to data drift (M27) --- Oskar
+- [ ] Collect input-output data from deployed app (M27) --- Jakob
+- [ ] Deploy drift detection API (M27) --- Oskar
+- [ ] Add system metrics to API (M28) --- Oskar
 - [ ] Cloud monitoring for metrics (M28)
 - [ ] Alerts in GCP if app misbehaves (M28)
 - [ ] (If applicable) Optimize data loading (distributed) (M29)
@@ -61,4 +61,4 @@
 - [ ] Revisit project description (did it meet goals?)
 - [ ] Architectural diagram of MLOps pipeline
 - [ ] Ensure everyone understands all parts of the project
-- [ ] Upload all code to GitHub
+- [X] Upload all code to GitHub

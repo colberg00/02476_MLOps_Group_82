@@ -55,5 +55,3 @@ uv run python -m mlops_course_project.train \
   ngram-max default is 2
   max-features default is 50000
   c default is 1.0
-
-  

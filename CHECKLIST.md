@@ -12,13 +12,13 @@
 - [X] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
 - [X] Follow coding practices (pep8) (M7)
 - [X] Add type hints + document essential parts (M7)
-- [ ] Setup version control for data / part of data (M8) --- Jakob
+- [ ] Setup version control for data / part of data (M8) --- Jacob
 - [½] Add CLI commands where it makes sense (M9) --- Kelvin
 - [ ] Construct one or more dockerfiles (M10) --- Kelvin
 - [ ] Build dockerfiles locally and verify they work (M10) --- Kelvin
 - [ ] Write one or more config files for experiments (M11) --- Oskar
 - [ ] Use Hydra for configs + hyperparameters (M11) --- Oskar
-- [ ] Profiling (M12) --- Christian
+- [ ] Profiling (M12) --- Oskar
 - [ ] Logging important events (M14) --- Christian
 - [ ] Use Weights & Biases for metrics/artifacts (M14)
 - [ ] Consider hyperparameter sweep (M14) --- Oskar
@@ -34,11 +34,11 @@
 - [ ] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)
-- [ ] Create GCP bucket for data + connect to DVC (M21) --- Jakob
-- [ ] Auto-build docker images workflow (M21) --- Jakob
-- [ ] Run training in GCP (Engine or Vertex AI) (M21) --- Jakob
+- [ ] Create GCP bucket for data + connect to DVC (M21) --- Jacob
+- [ ] Auto-build docker images workflow (M21) --- Jacob
+- [ ] Run training in GCP (Engine or Vertex AI) (M21) --- Jacob
 - [ ] FastAPI inference app (M22) --- Christian
-- [ ] Deploy model in GCP (Functions or Run) (M23) --- Jakob
+- [ ] Deploy model in GCP (Functions or Run) (M23) --- Jacob
 - [ ] API tests + CI for API tests (M24) --- Christian
 - [ ] Load testing (M24) --- Christian + Oskar
 - [ ] Specialized deployment API (ONNX/BentoML) (M25)
@@ -46,7 +46,7 @@
 
 ## Week 3
 - [ ] Robustness to data drift (M27) --- Oskar
-- [ ] Collect input-output data from deployed app (M27) --- Jakob
+- [ ] Collect input-output data from deployed app (M27) --- Jacob
 - [ ] Deploy drift detection API (M27) --- Oskar
 - [ ] Add system metrics to API (M28) --- Oskar
 - [ ] Cloud monitoring for metrics (M28)

@@ -1,192 +1,220 @@
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 import pandas as pd
 import typer
 from torch.utils.data import Dataset
 
+from typing import Union
 
-@dataclass(frozen=True)
-class SplitConfig:
-    seed: int = 42
-    test_size: float = 0.15
-    val_size: float = 0.15  # fraction of total
+import pandas as pd
 
 
-FOX_DOMAINS = {"foxnews.com"}
-NBC_DOMAINS = {"nbcnews.com"}
+# Hugging Face direct download URL for the CSV
+HF_CSV_URL = (
+    "https://huggingface.co/datasets/Jia555/cis519_news_urls/resolve/main/url_only_data_extra.csv"
+)
+
+# Output filename inside output_folder
+OUTPUT_FILENAME = "processed.csv"
+
+def _download_csv_if_missing(dest: Union[str, Path]) -> None:
+    """
+    Download the dataset CSV from Hugging Face if it does not exist at `dest`.
+
+    Parameters
+    ----------
+    dest:
+        File path where the raw CSV should be stored (e.g. data/raw/url_only_data_extra.csv).
+        Can be a str or pathlib.Path.
+    """
+    dest = Path(dest)  # force Path, even if caller passes a string
+
+    # Guardrail: this function expects a FILE path, not a directory
+    if dest.exists() and dest.is_dir():
+        raise ValueError(
+            f"_download_csv_if_missing expected a file path, but got a directory: {dest}. "
+            "Pass the full CSV path (e.g. data/raw/<file>.csv)."
+        )
+
+    # If file already exists and is non-empty, do nothing
+    if dest.exists() and dest.stat().st_size > 0:
+        return
+
+    # Ensure parent folder exists
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    # Some servers are happier if we set a user-agent header
+    req = Request(HF_CSV_URL, headers={"User-Agent": "Mozilla/5.0"})
+
+    with urlopen(req) as resp, dest.open("wb") as f:
+        chunk_size = 1024 * 1024  # 1 MB
+        while True:
+            chunk = resp.read(chunk_size)
+            if not chunk:
+                break
+            f.write(chunk)
 
 
-def _domain(url: str) -> str:
-    host = urlparse(url).netloc.lower()
-    host = re.sub(r"^www\.", "", host)
-    return host
+def _extract_news_source(url: str) -> Optional[str]:
+    """
+    Extract the news source from the URL domain.
 
+    Returns
+    -------
+    'foxnews' or 'nbcnews' if detected, otherwise None.
+    """
+    if not isinstance(url, str):
+        return None
 
-def _outlet_from_url(url: str) -> Optional[str]:
-    host = _domain(url)
-    for d in FOX_DOMAINS:
-        if host == d or host.endswith("." + d):
-            return "fox"
-    for d in NBC_DOMAINS:
-        if host == d or host.endswith("." + d):
-            return "nbc"
+    u = url.strip()
+    if not u:
+        return None
+
+    # Ensure urlparse works if scheme is missing
+    if "://" not in u:
+        u = "https://" + u
+
+    domain = (urlparse(u).netloc or "").lower()
+
+    if "foxnews.com" in domain:
+        return "foxnews"
+    if "nbcnews.com" in domain:
+        return "nbcnews"
     return None
 
 
-def _url_to_slug_text(url: str) -> str:
-    p = urlparse(url)
-    path = p.path.lower().strip("/")
-    if not path:
+def _url_to_keywords(url: str) -> str:
+    """
+    Convert a URL into whitespace-separated "keywords".
+
+    Strategy:
+    - Take the URL path (e.g., /world/iran/iran-trump-nuclear-...-rcna214328)
+    - Lowercase
+    - Replace separators with spaces (/, -, _, ., ?, =, & etc.)
+    - Keep only alphanumeric tokens
+    """
+    if not isinstance(url, str):
         return ""
 
-    # last segment only (slug)
-    slug = path.split("/")[-1]
-
-    # remove print suffix + NBC article id suffix
-    slug = re.sub(r"\.print$", "", slug)
-    slug = re.sub(r"-rcna\d+$", "", slug)
-
-    # tokenize
-    s = slug.replace("-", " ").replace("_", " ")
-    s = re.sub(r"[^a-z0-9\s]", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-
-    # drop very short slugs (likely section landing pages)
-    if len(s.split()) < 3:
+    u = url.strip()
+    if not u:
         return ""
 
-    # remove outlet tokens if they appear
-    s = re.sub(r"\b(fox|foxnews|nbc|nbcnews)\b", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
+    if "://" not in u:
+        u = "https://" + u
+
+    parsed = urlparse(u)
+
+    # Include domain to help distinguish common patterns if you want;
+    # here we mainly rely on path, but domain tokens don't hurt.
+    text = f"{parsed.netloc} {parsed.path}".lower()
+
+    # Replace common separators with spaces
+    for sep in ["/", "-", "_", ".", "?", "=", "&", "%", ":", "#", "+"]:
+        text = text.replace(sep, " ")
+
+    # Split and keep alphanumeric tokens only
+    tokens = [t for t in text.split() if t.isalnum()]
+
+    # Drop common junk tokens
+    junk = {"www", "com", "http", "https"}
+    tokens = [t for t in tokens if t not in junk]
+
+    return " ".join(tokens)
 
 
-def _find_raw_file(data_path: Path) -> Path:
-    if data_path.is_file():
-        return data_path
-
-    candidates = []
-    for ext in (".csv", ".tsv", ".txt"):
-        candidates.extend(sorted(data_path.rglob(f"*{ext}")))
-
-    if not candidates:
-        raise FileNotFoundError(f"No .csv/.tsv/.txt files found under: {data_path.resolve()}")
-
-    # prefer csv if available
-    for c in candidates:
-        if c.suffix.lower() == ".csv":
-            return c
-    return candidates[0]
-
-
-def _read_urls(file_path: Path) -> pd.DataFrame:
-    suf = file_path.suffix.lower()
-    if suf in (".csv", ".tsv"):
-        sep = "\t" if suf == ".tsv" else ","
-        df = pd.read_csv(file_path, sep=sep)
-        lower_cols = {c.lower(): c for c in df.columns}
-        if "url" in lower_cols:
-            df = df.rename(columns={lower_cols["url"]: "url"})
-        elif df.shape[1] == 1:
-            df.columns = ["url"]
-        else:
-            df = pd.read_csv(file_path, sep=sep, header=None, names=["url"])
-    else:
-        urls = []
-        for line in file_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.lower() == "url":
-                continue
-            urls.append(line)
-        df = pd.DataFrame({"url": urls})
-
-    df["url"] = df["url"].astype(str).str.strip()
-    df = df[df["url"].str.startswith("http", na=False)].copy()
-    return df.reset_index(drop=True)
 
 
 class MyDataset(Dataset):
     """My custom dataset."""
 
-    def __init__(self, data_path: Path) -> None:
-        self.data_path = data_path
+    def __init__(self, data_path: Union[str, Path]) -> None:
+        # Accept str or Path, normalize immediately
+        p = Path(data_path)
+
+        # If a directory was passed (e.g. "data/raw"), resolve it to a CSV inside it
+        if p.exists() and p.is_dir():
+            preferred = p / "url_only_data_extra.csv"
+            if preferred.exists():
+                p = preferred
+            else:
+                csvs = sorted(p.glob("*.csv"))
+                if len(csvs) == 1:
+                    p = csvs[0]
+                elif len(csvs) == 0:
+                    raise ValueError(
+                        f"MyDataset got a directory ({p}) but found no .csv files inside it. "
+                        f"Pass the full CSV path (e.g. {p}/<file>.csv)."
+                    )
+                else:
+                    raise ValueError(
+                        f"MyDataset got a directory ({p}) with multiple .csv files. "
+                        f"Pass the exact CSV file path. Found: {[c.name for c in csvs[:10]]}"
+                    )
+
+        # Now p should be the raw CSV file path
+        self.data_path = p
+
+        # Ensure raw file exists (download if needed)
+        _download_csv_if_missing(self.data_path)
+
+        # Load the raw CSV once (cheap for ~40k rows)
+        df = pd.read_csv(self.data_path)
+
+        # Basic validation
+        if "url" not in df.columns:
+            raise ValueError(
+                f"Expected a column named 'url' in {self.data_path}. Found columns: {list(df.columns)}"
+            )
+
+        # Clean and normalize
+        df["url"] = df["url"].astype(str).str.strip()
+
+        # Defensive: if any row accidentally contains multiple URLs separated by whitespace,
+        # split and explode to separate rows.
+        df["url"] = df["url"].str.split(r"\s+")
+        df = df.explode("url", ignore_index=True)
+        df["url"] = df["url"].astype(str).str.strip()
+        df = df[df["url"].ne("")].reset_index(drop=True)
+
+        # Create label and features
+        df["news_source"] = df["url"].apply(_extract_news_source)
+        df = df.dropna(subset=["news_source"]).reset_index(drop=True)
+        df["keywords"] = df["url"].apply(_url_to_keywords)
+
+        self.df = df
 
     def __len__(self) -> int:
-        raise NotImplementedError("Length is defined on processed splits, not raw URLs.")
+        """Return the length of the dataset."""
+        return len(self.df)
 
     def __getitem__(self, index: int):
-        raise NotImplementedError("Use processed splits for training (CSV -> Dataset).")
+        """
+        Return a given sample from the dataset.
 
-    def preprocess(self, output_folder: Path, cfg: SplitConfig = SplitConfig()) -> None:
-        raw_file = _find_raw_file(self.data_path)
-        df = _read_urls(raw_file)
+        Returns a dict so it is flexible for later training code.
+        """
+        row = self.df.iloc[index]
+        return {
+            "url": row["url"],
+            "news_source": row["news_source"],
+            "keywords": row["keywords"],
+        }
 
-        df["outlet"] = df["url"].apply(_outlet_from_url)
-        df = df.dropna(subset=["outlet"]).copy()
-
-        df["slug"] = df["url"].apply(_url_to_slug_text)
-        df = df[df["slug"] != ""].copy()
-
-        df = df.drop_duplicates(subset=["slug", "outlet"]).reset_index(drop=True)
-
-        if df.empty:
-            raise ValueError("No rows left after filtering. Check domain filters and slug extraction rules.")
-
-        # stratified split without sklearn
-        df = df.sample(frac=1.0, random_state=cfg.seed).reset_index(drop=True)
-
-        def stratified_split(df_in: pd.DataFrame, frac: float, seed: int):
-            a_parts, b_parts = [], []
-            for outlet, g in df_in.groupby("outlet"):
-                g = g.sample(frac=1.0, random_state=seed).reset_index(drop=True)
-                cut = int(round(len(g) * frac))
-                b_parts.append(g.iloc[:cut])
-                a_parts.append(g.iloc[cut:])
-            a = pd.concat(a_parts).sample(frac=1.0, random_state=seed).reset_index(drop=True)
-            b = pd.concat(b_parts).sample(frac=1.0, random_state=seed).reset_index(drop=True)
-            return a, b
-
-        train_val, test = stratified_split(df, cfg.test_size, cfg.seed)
-        val_frac_of_train_val = cfg.val_size / (1.0 - cfg.test_size)
-        train, val = stratified_split(train_val, val_frac_of_train_val, cfg.seed)
-
+    def process(self, output_folder: Union[str, Path]) -> None:
+        """Process the raw data and save it to the output folder."""
+        output_folder = Path(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
-        train[["slug", "outlet"]].to_csv(output_folder / "train.csv", index=False)
-        val[["slug", "outlet"]].to_csv(output_folder / "val.csv", index=False)
-        test[["slug", "outlet"]].to_csv(output_folder / "test.csv", index=False)
+        out_path = output_folder / OUTPUT_FILENAME
 
-        # quick summary
-        summary = pd.DataFrame(
-            {
-                "split": ["train", "val", "test"],
-                "rows": [len(train), len(val), len(test)],
-                "fox": [int((train["outlet"] == "fox").sum()), int((val["outlet"] == "fox").sum()), int((test["outlet"] == "fox").sum())],
-                "nbc": [int((train["outlet"] == "nbc").sum()), int((val["outlet"] == "nbc").sum()), int((test["outlet"] == "nbc").sum())],
-            }
-        )
-        summary.to_csv(output_folder / "split_summary.csv", index=False)
-
-        print(f"Raw file: {raw_file}")
-        print(f"Wrote: {output_folder / 'train.csv'}")
-        print(f"Wrote: {output_folder / 'val.csv'}")
-        print(f"Wrote: {output_folder / 'test.csv'}")
-        print(summary.to_string(index=False))
-
-
-def preprocess(
-    data_path: Path = Path("data/cis519_news_urls"),
-    output_folder: Path = Path("data/processed"),
-) -> None:
-    print("Preprocessing data...")
-    dataset = MyDataset(data_path)
-    dataset.preprocess(output_folder)
+        # Save the full processed table (url + label + keywords)
+        self.df.to_csv(out_path, index=False)
 
 
 if __name__ == "__main__":
-    typer.run(preprocess)
+    typer.run(process)

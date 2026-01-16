@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -14,29 +13,7 @@ from typing import Callable
 from datasets import load_dataset
 from loguru import logger
 
-
-def setup_logging(script_name: str = "data") -> None:
-    """Set up loguru configuration.
-    
-    Args:
-        script_name: Name of the script for log file naming.
-    """
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
-
-    logger.remove()
-    logger.add(
-        sys.stderr,
-        format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        level="INFO",
-    )
-    logger.add(
-        log_dir / f"{script_name}.log",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        level="DEBUG",
-        rotation="50 MB",
-        retention="7 days",
-    )
+from mlops_course_project import setup_logging
 
 
 setup_logging("data")
@@ -341,31 +318,38 @@ def ensure_downloaded(data_path: Path = Path("data/cis519_news_urls")) -> None:
     Writes a single combined raw.csv so preprocess is deterministic.
     """
     if _raw_ready(data_path):
-        print(f"Raw dataset already present: {(data_path / RAW_FILENAME).resolve()}")
+        logger.info(f"Raw dataset already present: {(data_path / RAW_FILENAME).resolve()}")
         return
 
-    print("Raw dataset missing -> downloading from Hugging Face...")
-    dataset = load_dataset("Jia555/cis519_news_urls")
+    logger.info("Raw dataset missing -> downloading from Hugging Face...")
+    try:
+        dataset = load_dataset("Jia555/cis519_news_urls")
+    except Exception as e:
+        logger.error(f"Failed to download dataset: {e}")
+        raise
 
     data_path.mkdir(parents=True, exist_ok=True)
+    logger.debug(f"Created data directory: {data_path}")
 
     # Combine all splits into one raw file (so preprocess doesn't pick a random split)
     dfs = []
     for split_name, split_data in dataset.items():
         df = split_data.to_pandas()
         dfs.append(df)
-        print(f"Loaded split '{split_name}' with {len(df)} rows")
+        logger.debug(f"Loaded split '{split_name}' with {len(df)} rows")
 
     combined = pd.concat(dfs, ignore_index=True)
+    logger.info(f"Combined {len(dfs)} splits into {len(combined)} total rows")
 
     # Optional: if HF dataset doesn't have 'url' named exactly, try to normalize
     lower_cols = {c.lower(): c for c in combined.columns}
     if "url" in lower_cols and lower_cols["url"] != "url":
         combined = combined.rename(columns={lower_cols["url"]: "url"})
+        logger.debug("Normalized 'url' column name")
 
     out_file = data_path / RAW_FILENAME
     combined.to_csv(out_file, index=False)
-    print(f"Saved combined raw dataset to: {out_file.resolve()} ({len(combined)} rows)")
+    logger.info(f"Saved combined raw dataset to: {out_file.resolve()} ({len(combined)} rows)")
 
 def run_pipeline(
     data_path: Path = Path("data/cis519_news_urls"),
@@ -373,22 +357,29 @@ def run_pipeline(
     force_download: bool = False,
     force_preprocess: bool = False,
 ) -> None:
+    logger.info(f"Starting pipeline: force_download={force_download}, force_preprocess={force_preprocess}")
+    
     if force_download:
+        logger.info("Force download enabled - deleting existing raw.csv")
         # Force re-download by deleting raw.csv if present
         raw = data_path / RAW_FILENAME
         if raw.exists():
             raw.unlink()
+            logger.debug(f"Deleted: {raw}")
         ensure_downloaded(data_path)
     else:
         ensure_downloaded(data_path)
 
     if force_preprocess or not _processed_ready(output_folder):
         if _processed_ready(output_folder) and force_preprocess:
-            print("Forcing preprocess: overwriting existing processed files.")
+            logger.warning("Forcing preprocess: overwriting existing processed files")
+        logger.info("Starting preprocessing step")
         preprocess(data_path=data_path, output_folder=output_folder)
     else:
-        print(f"Processed data already present in: {output_folder.resolve()}")
-        print("Found:", ", ".join(PROCESSED_FILES))
+        logger.info(f"Processed data already present in: {output_folder.resolve()}")
+        logger.debug(f"Found: {', '.join(PROCESSED_FILES)}")
+    
+    logger.info("Pipeline completed successfully")
 
 def main(
     data_path: Path = Path("data/cis519_news_urls"),

@@ -8,7 +8,7 @@
 - [X] Create a dedicated environment and track packages (M2)
 - [X] Create initial file structure (cookiecutter/template) (M6)
 - [X] Implement `data.py` download + preprocessing (M6)
-- [ ] Implement model in `model.py` + training in `train.py` and run it (M6) --- Kelvin kigger her
+- [X] Implement model in `model.py` + training in `train.py` and run it (M6)
 - [X] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
 - [X] Follow coding practices (pep8) (M7)
 - [X] Add type hints + document essential parts (M7)

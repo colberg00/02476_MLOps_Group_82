@@ -126,7 +126,8 @@ class MyDataset(Dataset):
         raise NotImplementedError("Use processed splits for training (CSV -> Dataset).")
 
     def preprocess(self, output_folder: Path, cfg: SplitConfig = SplitConfig()) -> None:
-        raw_file = _find_raw_file(self.data_path)
+        preferred = self.data_path / RAW_FILENAME
+        raw_file = preferred if preferred.exists() else _find_raw_file(self.data_path)  
         df = _read_urls(raw_file)
 
         df["outlet"] = df["url"].apply(_outlet_from_url)
@@ -210,9 +211,108 @@ def preprocess(
     dataset.preprocess(output_folder)
 
 
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "download":
-        download_dataset()
+app = typer.Typer(help="Dataset utilities")
+
+@app.command()
+def download(
+    data_path: Path = Path("data/cis519_news_urls"),
+) -> None:
+    """Download dataset from Hugging Face and save to local directory."""
+    download_dataset(data_path)
+
+
+@app.command()
+def run_preprocess(
+    data_path: Path = Path("data/cis519_news_urls"),
+    output_folder: Path = Path("data/processed"),
+) -> None:
+    """Preprocess raw URL data into train/val/test splits."""
+    preprocess(data_path=data_path, output_folder=output_folder)
+
+
+RAW_FILENAME = "raw.csv"
+PROCESSED_FILES = ("train.csv", "val.csv", "test.csv", "split_summary.csv")
+
+
+def _raw_ready(data_path: Path) -> bool:
+    """Return True if we have a usable raw file on disk."""
+    raw_file = data_path / RAW_FILENAME
+    return raw_file.exists() and raw_file.is_file() and raw_file.stat().st_size > 0
+
+
+def _processed_ready(output_folder: Path) -> bool:
+    """Return True if preprocessing outputs exist."""
+    return all((output_folder / f).exists() for f in PROCESSED_FILES)
+
+
+def ensure_downloaded(data_path: Path = Path("data/cis519_news_urls")) -> None:
+    """
+    Download only if raw.csv is missing.
+    Writes a single combined raw.csv so preprocess is deterministic.
+    """
+    if _raw_ready(data_path):
+        print(f"Raw dataset already present: {(data_path / RAW_FILENAME).resolve()}")
+        return
+
+    print("Raw dataset missing -> downloading from Hugging Face...")
+    dataset = load_dataset("Jia555/cis519_news_urls")
+
+    data_path.mkdir(parents=True, exist_ok=True)
+
+    # Combine all splits into one raw file (so preprocess doesn't pick a random split)
+    dfs = []
+    for split_name, split_data in dataset.items():
+        df = split_data.to_pandas()
+        dfs.append(df)
+        print(f"Loaded split '{split_name}' with {len(df)} rows")
+
+    combined = pd.concat(dfs, ignore_index=True)
+
+    # Optional: if HF dataset doesn't have 'url' named exactly, try to normalize
+    lower_cols = {c.lower(): c for c in combined.columns}
+    if "url" in lower_cols and lower_cols["url"] != "url":
+        combined = combined.rename(columns={lower_cols["url"]: "url"})
+
+    out_file = data_path / RAW_FILENAME
+    combined.to_csv(out_file, index=False)
+    print(f"Saved combined raw dataset to: {out_file.resolve()} ({len(combined)} rows)")
+
+def run_pipeline(
+    data_path: Path = Path("data/cis519_news_urls"),
+    output_folder: Path = Path("data/processed"),
+    force_download: bool = False,
+    force_preprocess: bool = False,
+) -> None:
+    if force_download:
+        # Force re-download by deleting raw.csv if present
+        raw = data_path / RAW_FILENAME
+        if raw.exists():
+            raw.unlink()
+        ensure_downloaded(data_path)
     else:
-        typer.run(preprocess)
+        ensure_downloaded(data_path)
+
+    if force_preprocess or not _processed_ready(output_folder):
+        if _processed_ready(output_folder) and force_preprocess:
+            print("Forcing preprocess: overwriting existing processed files.")
+        preprocess(data_path=data_path, output_folder=output_folder)
+    else:
+        print(f"Processed data already present in: {output_folder.resolve()}")
+        print("Found:", ", ".join(PROCESSED_FILES))
+
+def main(
+    data_path: Path = Path("data/cis519_news_urls"),
+    output_folder: Path = Path("data/processed"),
+    force_download: bool = False,
+    force_preprocess: bool = False,
+) -> None:
+    run_pipeline(
+        data_path=data_path,
+        output_folder=output_folder,
+        force_download=force_download,
+        force_preprocess=force_preprocess,
+    )
+
+
+if __name__ == "__main__":
+    typer.run(main)

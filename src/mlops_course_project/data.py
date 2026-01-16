@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -11,6 +12,34 @@ import typer
 from torch.utils.data import Dataset
 from typing import Callable
 from datasets import load_dataset
+from loguru import logger
+
+
+def setup_logging(script_name: str = "data") -> None:
+    """Set up loguru configuration.
+    
+    Args:
+        script_name: Name of the script for log file naming.
+    """
+    log_dir = Path(__file__).parent.parent.parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        level="INFO",
+    )
+    logger.add(
+        log_dir / f"{script_name}.log",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+        level="DEBUG",
+        rotation="50 MB",
+        retention="7 days",
+    )
+
+
+setup_logging("data")
 
 
 @dataclass(frozen=True)
@@ -70,24 +99,50 @@ def _url_to_slug_text(url: str) -> str:
 
 
 def _find_raw_file(data_path: Path) -> Path:
+    """Find raw data file in directory.
+    
+    Args:
+        data_path: Path to directory or file.
+        
+    Returns:
+        Path to the raw data file.
+        
+    Raises:
+        FileNotFoundError: If no data file found.
+    """
     if data_path.is_file():
+        logger.debug(f"Found raw file at {data_path}")
         return data_path
 
+    logger.debug(f"Searching for raw files in {data_path}")
     candidates = []
     for ext in (".csv", ".tsv", ".txt"):
         candidates.extend(sorted(data_path.rglob(f"*{ext}")))
 
     if not candidates:
+        logger.error(f"No .csv/.tsv/.txt files found under: {data_path.resolve()}")
         raise FileNotFoundError(f"No .csv/.tsv/.txt files found under: {data_path.resolve()}")
 
+    logger.debug(f"Found {len(candidates)} candidate file(s)")
     # prefer csv if available
     for c in candidates:
         if c.suffix.lower() == ".csv":
+            logger.debug(f"Selecting CSV file: {c}")
             return c
+    logger.debug(f"Using file: {candidates[0]}")
     return candidates[0]
 
 
 def _read_urls(file_path: Path) -> pd.DataFrame:
+    """Read URLs from file.
+    
+    Args:
+        file_path: Path to the file containing URLs.
+        
+    Returns:
+        DataFrame with URL column.
+    """
+    logger.info(f"Reading URLs from {file_path}")
     suf = file_path.suffix.lower()
     if suf in (".csv", ".tsv"):
         sep = "\t" if suf == ".tsv" else ","
@@ -108,8 +163,10 @@ def _read_urls(file_path: Path) -> pd.DataFrame:
             urls.append(line)
         df = pd.DataFrame({"url": urls})
 
+    logger.debug(f"Loaded {len(df)} URLs from file")
     df["url"] = df["url"].astype(str).str.strip()
     df = df[df["url"].str.startswith("http", na=False)].copy()
+    logger.info(f"Found {len(df)} valid URLs after filtering")
     return df.reset_index(drop=True)
 
 
@@ -127,18 +184,36 @@ class MyDataset(Dataset):
 
     def preprocess(self, output_folder: Path, cfg: SplitConfig = SplitConfig()) -> None:
         preferred = self.data_path / RAW_FILENAME
+        """Preprocess dataset: filter by outlet, extract slugs, and create splits.
+        
+        Args:
+            output_folder: Directory to save processed splits.
+            cfg: Configuration for train/val/test split ratios.
+            
+        Raises:
+            ValueError: If no data remains after filtering.
+        """
+        logger.info("Starting preprocessing")
         raw_file = preferred if preferred.exists() else _find_raw_file(self.data_path)  
         df = _read_urls(raw_file)
+        logger.info(f"Raw data: {len(df)} rows")
 
         df["outlet"] = df["url"].apply(_outlet_from_url)
+        initial_count = len(df)
         df = df.dropna(subset=["outlet"]).copy()
+        logger.info(f"After outlet filtering: {len(df)} rows (removed {initial_count - len(df)})")
 
         df["slug"] = df["url"].apply(_url_to_slug_text)
+        initial_count = len(df)
         df = df[df["slug"] != ""].copy()
+        logger.info(f"After slug extraction: {len(df)} rows (removed {initial_count - len(df)})")
 
+        initial_count = len(df)
         df = df.drop_duplicates(subset=["slug", "outlet"]).reset_index(drop=True)
+        logger.info(f"After deduplication: {len(df)} rows (removed {initial_count - len(df)})")
 
         if df.empty:
+            logger.error("No rows left after filtering. Check domain filters and slug extraction rules.")
             raise ValueError("No rows left after filtering. Check domain filters and slug extraction rules.")
 
         # stratified split without sklearn
@@ -159,10 +234,15 @@ class MyDataset(Dataset):
         val_frac_of_train_val = cfg.val_size / (1.0 - cfg.test_size)
         train, val = stratified_split(train_val, val_frac_of_train_val, cfg.seed)
 
+        logger.debug(f"Split sizes - train: {len(train)}, val: {len(val)}, test: {len(test)}")
+
         output_folder.mkdir(parents=True, exist_ok=True)
         train[["slug", "outlet"]].to_csv(output_folder / "train.csv", index=False)
+        logger.info(f"Wrote train split ({len(train)} rows) to {output_folder / 'train.csv'}")
         val[["slug", "outlet"]].to_csv(output_folder / "val.csv", index=False)
+        logger.info(f"Wrote val split ({len(val)} rows) to {output_folder / 'val.csv'}")
         test[["slug", "outlet"]].to_csv(output_folder / "test.csv", index=False)
+        logger.info(f"Wrote test split ({len(test)} rows) to {output_folder / 'test.csv'}")
 
         # quick summary
         summary = pd.DataFrame(
@@ -174,41 +254,51 @@ class MyDataset(Dataset):
             }
         )
         summary.to_csv(output_folder / "split_summary.csv", index=False)
-
-        print(f"Raw file: {raw_file}")
-        print(f"Wrote: {output_folder / 'train.csv'}")
-        print(f"Wrote: {output_folder / 'val.csv'}")
-        print(f"Wrote: {output_folder / 'test.csv'}")
-        print(summary.to_string(index=False))
+        logger.info(f"Wrote summary to {output_folder / 'split_summary.csv'}")
+        logger.info(f"Preprocessing complete")
 
 
 def download_dataset(
     data_path: Path = Path("data/cis519_news_urls"),
 ) -> None:
-    """Download dataset from Hugging Face and save to local directory."""
-    print("Downloading dataset from Hugging Face...")
-    dataset = load_dataset('Jia555/cis519_news_urls')
+    """Download dataset from Hugging Face and save to local directory.
+    
+    Args:
+        data_path: Directory to save the downloaded dataset.
+    """
+    logger.info("Starting dataset download from Hugging Face (Jia555/cis519_news_urls)")
+    try:
+        dataset = load_dataset('Jia555/cis519_news_urls')
+        logger.info(f"Successfully downloaded dataset")
+    except Exception as e:
+        logger.error(f"Failed to download dataset: {e}")
+        raise
     
     # Create data directory if it doesn't exist
     data_path.mkdir(parents=True, exist_ok=True)
+    logger.debug(f"Created data directory: {data_path}")
     
     # Save each split to CSV
     for split_name, split_data in dataset.items():
+        logger.debug(f"Converting {split_name} split to DataFrame")
         df = split_data.to_pandas()
-        df.to_csv(data_path / f"{split_name}.csv", index=False)
-        print(f"Saved {split_name} to {data_path / f'{split_name}.csv'}")
+        output_file = data_path / f"{split_name}.csv"
+        df.to_csv(output_file, index=False)
+        logger.info(f"Saved {split_name} split ({len(df)} rows) to {output_file}")
 
 
 def preprocess(
     data_path: Path = Path("data/cis519_news_urls"),
     output_folder: Path = Path("data/processed"),
 ) -> None:
-    print("Preprocessing data...")
-    if not data_path.exists():
-        print(f"Data folder not found at {data_path}. Downloading dataset...")
-        download_dataset(data_path)
-    dataset = MyDataset(data_path)
-    dataset.preprocess(output_folder)
+    logger.info(f"Preprocessing dataset from {data_path} to {output_folder}")
+    try:
+        dataset = MyDataset(data_path)
+        dataset.preprocess(output_folder)
+        logger.info("Preprocessing completed successfully")
+    except Exception as e:
+        logger.error(f"Preprocessing failed: {e}", exc_info=True)
+        raise
 
 
 app = typer.Typer(help="Dataset utilities")
@@ -315,4 +405,4 @@ def main(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()

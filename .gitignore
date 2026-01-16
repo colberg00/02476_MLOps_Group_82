@@ -7,6 +7,9 @@ models/
 # report folder
 reports/
 
+# logs
+logs/
+
 # test cache
 manual_test/
 

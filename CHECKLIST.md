@@ -16,8 +16,8 @@
 - [½] Add CLI commands where it makes sense (M9) --- Kelvin
 - [ ] Construct one or more dockerfiles (M10) --- Kelvin
 - [ ] Build dockerfiles locally and verify they work (M10) --- Kelvin
-- [ ] Write one or more config files for experiments (M11) --- Oskar
-- [ ] Use Hydra for configs + hyperparameters (M11) --- Oskar
+- [X] Write one or more config files for experiments (M11) --- Oskar
+- [X] Use Hydra for configs + hyperparameters (M11) --- Oskar
 - [ ] Profiling (M12) --- Oskar
 - [ ] Logging important events (M14) --- Christian
 - [ ] Use Weights & Biases for metrics/artifacts (M14)

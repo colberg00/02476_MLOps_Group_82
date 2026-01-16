@@ -1,8 +1,4 @@
 from __future__ import annotations
-from mlops_course_project.model import Model
-from mlops_course_project.data import MyDataset
-
-
 
 import json
 from dataclasses import dataclass
@@ -12,8 +8,6 @@ from typing import Any
 import pandas as pd
 import typer
 from joblib import dump
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -22,11 +16,20 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.pipeline import Pipeline
 
-import hydra
-from hydra.utils import get_original_cwd
-from omegaconf import DictConfig, OmegaConf
+from mlops_course_project.model import create_baseline_model
+
+
+@dataclass(frozen=True)
+class TrainConfig:
+    seed: int = 42
+    max_features: int = 50_000
+    ngram_min: int = 1
+    ngram_max: int = 2
+    min_df: int = 2
+    C: float = 1.0
+    max_iter: int = 2000
+
 
 LABEL_MAP = {"nbc": 0, "fox": 1}
 INV_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
@@ -70,7 +73,18 @@ def _metrics(y_true: list[int], y_pred: list[int]) -> dict[str, Any]:
     }
 
 
-def train(cfg: DictConfig) -> None:
+def train(
+    processed_dir: Path = Path("data/processed"),
+    model_out: Path = Path("models/baseline.joblib"),
+    metrics_out: Path = Path("reports/baseline_metrics.json"),
+    seed: int = 42,
+    max_features: int = 50_000,
+    ngram_min: int = 1,
+    ngram_max: int = 2,
+    min_df: int = 2,
+    C: float = 1.0,
+    max_iter: int = 2000,
+) -> None:
     """
     Train TF-IDF + Logistic Regression baseline on URL slug text.
 
@@ -78,14 +92,15 @@ def train(cfg: DictConfig) -> None:
       data/processed/train.csv, val.csv, test.csv
     Each must have columns: slug,outlet
     """
-    repo_root = Path(get_original_cwd())     # repo root where you launched
-    run_dir = Path.cwd()                     # hydra run dir (because chdir: true)
-
-    processed_dir = repo_root / cfg.processed_dir
-
-    # If cfg.model_out / cfg.metrics_out are absolute or run-dir relative, just Path() them
-    model_out = Path(cfg.model_out)
-    metrics_out = Path(cfg.metrics_out)
+    cfg = TrainConfig(
+        seed=seed,
+        max_features=max_features,
+        ngram_min=ngram_min,
+        ngram_max=ngram_max,
+        min_df=min_df,
+        C=C,
+        max_iter=max_iter,
+    )
 
     train_path = processed_dir / "train.csv"
     val_path = processed_dir / "val.csv"
@@ -99,33 +114,21 @@ def train(cfg: DictConfig) -> None:
     X_val, y_val = _load_split(val_path)
     X_test, y_test = _load_split(test_path)
 
-    pipeline = Pipeline(
-        steps=[
-            (
-                "tfidf",
-                TfidfVectorizer(
-                    lowercase=True,
-                    ngram_range=(cfg.ngram_min, cfg.ngram_max),
-                    min_df=cfg.min_df,
-                    max_features=cfg.max_features,
-                ),
-            ),
-            (
-                "clf",
-                LogisticRegression(
-                    random_state=cfg.seed,
-                    C=cfg.C,
-                    max_iter=cfg.max_iter,
-                    class_weight="balanced",
-                ),
-            ),
-        ]
+    pipeline = create_baseline_model(
+        seed=cfg.seed,
+        max_features=cfg.max_features,
+        ngram_min=cfg.ngram_min,
+        ngram_max=cfg.ngram_max,
+        min_df=cfg.min_df,
+        C=cfg.C,
+        max_iter=cfg.max_iter,
     )
 
     print("Training baseline (TF-IDF + LogisticRegression)...")
     print(f"Train size: {len(X_train)} | Val size: {len(X_val)} | Test size: {len(X_test)}")
     pipeline.fit(X_train, y_train)
 
+    # Evaluate
     val_pred = pipeline.predict(X_val).tolist()
     test_pred = pipeline.predict(X_test).tolist()
 
@@ -133,12 +136,13 @@ def train(cfg: DictConfig) -> None:
     test_metrics = _metrics(y_test, test_pred)
 
     results: dict[str, Any] = {
-        "config": OmegaConf.to_container(cfg, resolve=True),
+        "config": cfg.__dict__,
         "label_map": LABEL_MAP,
         "val": val_metrics,
         "test": test_metrics,
     }
 
+    # Save outputs
     model_out.parent.mkdir(parents=True, exist_ok=True)
     metrics_out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -147,13 +151,21 @@ def train(cfg: DictConfig) -> None:
     with metrics_out.open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nSaved model to:   {model_out}")
+    print()
+    print(f"Saved model to:   {model_out}")
     print(f"Saved metrics to: {metrics_out}")
+    print()
+    print("Validation metrics:")
+    print(
+        f"  acc={val_metrics['accuracy']:.4f}  f1={val_metrics['f1']:.4f}  "
+        f"prec={val_metrics['precision']:.4f}  rec={val_metrics['recall']:.4f}"
+    )
+    print("Test metrics:")
+    print(
+        f"  acc={test_metrics['accuracy']:.4f}  f1={test_metrics['f1']:.4f}  "
+        f"prec={test_metrics['precision']:.4f}  rec={test_metrics['recall']:.4f}"
+    )
 
-
-@hydra.main(config_path="../../configs", config_name="config", version_base=None)
-def main(cfg: DictConfig) -> None:
-    train(cfg)
 
 if __name__ == "__main__":
-    main()
+    typer.run(train)

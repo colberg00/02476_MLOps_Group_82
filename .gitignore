@@ -2,6 +2,10 @@ docs/site/
 
 # data folder
 data/
+# local model folder
+models/
+# report folder
+reports/
 
 # test cache
 manual_test/

@@ -204,6 +204,9 @@ def preprocess(
     output_folder: Path = Path("data/processed"),
 ) -> None:
     print("Preprocessing data...")
+    if not data_path.exists():
+        print(f"Data folder not found at {data_path}. Downloading dataset...")
+        download_dataset(data_path)
     dataset = MyDataset(data_path)
     dataset.preprocess(output_folder)
 

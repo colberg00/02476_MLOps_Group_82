@@ -1,8 +1,4 @@
 from __future__ import annotations
-from mlops_course_project.model import Model
-from mlops_course_project.data import MyDataset
-
-
 
 import json
 from dataclasses import dataclass
@@ -12,8 +8,6 @@ from typing import Any
 import pandas as pd
 import typer
 from joblib import dump
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -22,7 +16,8 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.pipeline import Pipeline
+
+from mlops_course_project.model import create_baseline_model
 
 import hydra
 from hydra.utils import get_original_cwd
@@ -99,27 +94,14 @@ def train(cfg: DictConfig) -> None:
     X_val, y_val = _load_split(val_path)
     X_test, y_test = _load_split(test_path)
 
-    pipeline = Pipeline(
-        steps=[
-            (
-                "tfidf",
-                TfidfVectorizer(
-                    lowercase=True,
-                    ngram_range=(cfg.ngram_min, cfg.ngram_max),
-                    min_df=cfg.min_df,
-                    max_features=cfg.max_features,
-                ),
-            ),
-            (
-                "clf",
-                LogisticRegression(
-                    random_state=cfg.seed,
-                    C=cfg.C,
-                    max_iter=cfg.max_iter,
-                    class_weight="balanced",
-                ),
-            ),
-        ]
+    pipeline = create_baseline_model(
+        seed=cfg.seed,
+        max_features=cfg.max_features,
+        ngram_min=cfg.ngram_min,
+        ngram_max=cfg.ngram_max,
+        min_df=cfg.min_df,
+        C=cfg.C,
+        max_iter=cfg.max_iter,
     )
 
     print("Training baseline (TF-IDF + LogisticRegression)...")

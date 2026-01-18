@@ -25,9 +25,9 @@
 - [ ] Use PyTorch Lightning (if applicable) (M15)
 
 ## Week 2
-- [ ] Unit tests for data code (M16) --- Kelvin
+- [X] Unit tests for data code (M16) --- Kelvin
 - [ ] Unit tests for model/training (M16) --- Kelvin
-- [ ] Code coverage (M16) --- Kelvin
+- [½] Code coverage (M16) --- Kelvin
 - [ ] CI on GitHub (M17) --- Christian
 - [ ] CI caching + multi-os/python/torch testing (M17) --- Christian
 - [ ] Add linting step in CI (M17) --- Christian

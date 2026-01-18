@@ -1,6 +1,9 @@
 from __future__ import annotations
-
 import json
+
+import cProfile
+import io
+import pstats
 from pathlib import Path
 from typing import Any
 
@@ -190,6 +193,49 @@ def main(cfg: DictConfig) -> None:
     """Main entry point for training."""
     try:
         train(cfg)
+            # Profiling is ON by default. Disable by setting `profiling.enabled: false` in the Hydra config.
+        profiling_cfg = cfg.get("profiling", {})
+        profiling_enabled = bool(profiling_cfg.get("enabled", True))
+
+        if profiling_enabled:
+            sort_by = str(profiling_cfg.get("sort_by", "cumtime"))
+            print_top = int(profiling_cfg.get("print_top", 40))
+
+            # Write profiling artifacts into the current working dir (Hydra run dir when chdir=true)
+            prof_path = Path(str(profiling_cfg.get("output", "train.prof")))
+            txt_path = Path(str(profiling_cfg.get("text_output", "train_profile.txt")))
+            if not prof_path.is_absolute():
+                prof_path = Path.cwd() / prof_path
+            if not txt_path.is_absolute():
+                txt_path = Path.cwd() / txt_path
+
+            logger.info(
+                f"Profiling enabled. Writing cProfile stats to {prof_path} and summary to {txt_path}"
+            )
+
+            prof = cProfile.Profile()
+            prof.enable()
+            train(cfg)
+            prof.disable()
+
+            prof_path.parent.mkdir(parents=True, exist_ok=True)
+            txt_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Save raw stats for tools like snakeviz
+            prof.dump_stats(str(prof_path))
+
+            # Save a readable text summary for quick inspection
+            s = io.StringIO()
+            stats = pstats.Stats(prof, stream=s)
+            stats.strip_dirs().sort_stats(sort_by).print_stats(print_top)
+            txt_path.write_text(s.getvalue(), encoding="utf-8")
+
+            logger.info(f"Saved cProfile stats to: {prof_path}")
+            logger.info(f"Saved cProfile summary to: {txt_path}")
+        else:
+            logger.info("Profiling disabled via config (profiling.enabled: false)")
+            train(cfg)
+
     except Exception as e:
         logger.error(f"Training failed: {e}", exc_info=True)
         raise

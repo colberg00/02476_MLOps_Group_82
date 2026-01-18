@@ -6,9 +6,23 @@ from urllib.parse import urlparse
 
 import typer
 from joblib import load
-
+import cProfile
+import io
+import os
+import pstats
 
 LABEL_MAP = {0: "nbc", 1: "fox"}
+
+# Profiling is ON by default. Set this to False to disable in-script profiling.
+PROFILING_ENABLED = True
+# Optional: also disable profiling by setting the env var `PREDICT_NO_PROFILE=1`
+PROFILING_DISABLE_ENVVAR = "PREDICT_NO_PROFILE"
+
+PROFILE_OUTPUT = Path("predict.prof")
+PROFILE_TEXT_OUTPUT = Path("predict_profile.txt")
+PROFILE_SORT_BY = "cumtime"
+PROFILE_TOP = 40
+
 
 
 def _url_to_slug_text(url: str) -> str:
@@ -53,7 +67,7 @@ def predict(
         raise typer.BadParameter("Provide either --slug or --url.")
 
     if url:
-        slug_extracted = url_to_slug_text(url)
+        slug_extracted = _url_to_slug_text(url)
         if not slug_extracted:
             raise typer.BadParameter(
                 "Could not extract a valid slug from URL (it may be a section page or too short)."
@@ -81,4 +95,33 @@ def predict(
 
 
 if __name__ == "__main__":
-    typer.run(predict)
+    # Profiling is enabled by default; disable by setting PROFILING_ENABLED=False
+    # or by exporting PREDICT_NO_PROFILE=1.
+    disable_via_env = os.getenv(PROFILING_DISABLE_ENVVAR, "").strip().lower() in {"1", "true", "yes"}
+    profiling_on = PROFILING_ENABLED and not disable_via_env
+
+    if not profiling_on:
+        typer.run(predict)
+    else:
+        prof = cProfile.Profile()
+        try:
+            prof.enable()
+            try:
+                typer.run(predict)
+            except SystemExit:
+                # Typer/Click often raises SystemExit after handling CLI
+                pass
+        finally:
+            prof.disable()
+
+            prof.dump_stats(str(PROFILE_OUTPUT))
+
+            s = io.StringIO()
+            stats = pstats.Stats(prof, stream=s)
+            stats.strip_dirs().sort_stats(PROFILE_SORT_BY).print_stats(PROFILE_TOP)
+            
+            PROFILE_TEXT_OUTPUT.write_text(s.getvalue(), encoding="utf-8")
+            
+            typer.echo(f"Saved cProfile stats to: {PROFILE_OUTPUT}")
+            typer.echo(f"Saved cProfile summary to: {PROFILE_TEXT_OUTPUT}")
+

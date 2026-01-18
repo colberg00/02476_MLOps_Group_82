@@ -14,8 +14,8 @@
 - [X] Add type hints + document essential parts (M7)
 - [ ] Setup version control for data / part of data (M8) --- Jacob
 - [½] Add CLI commands where it makes sense (M9) --- Kelvin
-- [ ] Construct one or more dockerfiles (M10) --- Kelvin
-- [ ] Build dockerfiles locally and verify they work (M10) --- Kelvin
+- [X] Construct one or more dockerfiles (M10) --- Kelvin
+- [X] Build dockerfiles locally and verify they work (M10) --- Kelvin
 - [X] Write one or more config files for experiments (M11) --- Oskar
 - [X] Use Hydra for configs + hyperparameters (M11) --- Oskar
 - [ ] Profiling (M12) --- Oskar

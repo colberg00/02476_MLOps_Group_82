@@ -13,6 +13,9 @@ logs/
 # test cache
 manual_test/
 
+#output folder
+outputs/
+
 # other local dev info
 .vscode/
 

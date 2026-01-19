@@ -1,0 +1,5 @@
+outs:
+- md5: 6029f509a70c8edea32d88d05e6902a0
+  size: 4432572
+  hash: md5
+  path: news_urls.csv

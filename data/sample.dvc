@@ -1,0 +1,6 @@
+outs:
+- md5: a482f555759ed30bb8ee38b35129ead0.dir
+  size: 12
+  nfiles: 1
+  hash: md5
+  path: sample

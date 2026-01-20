@@ -1,7 +1,10 @@
 docs/site/
 
-# data folder
-data/
+# data folder (DVC-compatible)
+data/**
+!data/**/
+!data/**/*.dvc
+
 # local model folder
 models/
 # report folder

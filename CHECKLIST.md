@@ -18,7 +18,7 @@
 - [X] Build dockerfiles locally and verify they work (M10) --- Kelvin
 - [X] Write one or more config files for experiments (M11) --- Oskar
 - [X] Use Hydra for configs + hyperparameters (M11) --- Oskar
-- [ ] Profiling (M12) --- Oskar
+- [x] Profiling (M12) --- Oskar (comment: added profiling to the important files)
 - [ ] Logging important events (M14) --- Christian
 - [ ] Use Weights & Biases for metrics/artifacts (M14)
 - [ ] Consider hyperparameter sweep (M14) --- Oskar

@@ -14,10 +14,10 @@
 - [X] Add type hints + document essential parts (M7)
 - [ ] Setup version control for data / part of data (M8) --- Jacob
 - [½] Add CLI commands where it makes sense (M9) --- Kelvin
-- [ ] Construct one or more dockerfiles (M10) --- Kelvin
-- [ ] Build dockerfiles locally and verify they work (M10) --- Kelvin
-- [ ] Write one or more config files for experiments (M11) --- Oskar
-- [ ] Use Hydra for configs + hyperparameters (M11) --- Oskar
+- [X] Construct one or more dockerfiles (M10) --- Kelvin
+- [X] Build dockerfiles locally and verify they work (M10) --- Kelvin
+- [X] Write one or more config files for experiments (M11) --- Oskar
+- [X] Use Hydra for configs + hyperparameters (M11) --- Oskar
 - [ ] Profiling (M12) --- Oskar
 - [ ] Logging important events (M14) --- Christian
 - [ ] Use Weights & Biases for metrics/artifacts (M14)
@@ -25,9 +25,9 @@
 - [ ] Use PyTorch Lightning (if applicable) (M15)
 
 ## Week 2
-- [ ] Unit tests for data code (M16) --- Kelvin
-- [ ] Unit tests for model/training (M16) --- Kelvin
-- [ ] Code coverage (M16) --- Kelvin
+- [X] Unit tests for data code (M16) --- Kelvin
+- [X] Unit tests for model/training (M16) --- Kelvin
+- [X] Code coverage (M16) --- Kelvin
 - [ ] CI on GitHub (M17) --- Christian
 - [ ] CI caching + multi-os/python/torch testing (M17) --- Christian
 - [ ] Add linting step in CI (M17) --- Christian

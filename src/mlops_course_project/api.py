@@ -2,9 +2,11 @@
 
 import os
 from pathlib import Path
+import csv
+from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from joblib import load
 from pydantic import BaseModel
 
@@ -12,7 +14,36 @@ from mlops_course_project.data import _url_to_slug_text
 
 
 LABEL_MAP = {0: "nbc", 1: "fox"}
-DEFAULT_MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/baseline.joblib"))
+DEFAULT_MODEL_PATH = Path(
+    os.getenv(
+        "MODEL_PATH",
+        str(Path(__file__).resolve().parent / "models" / "baseline.joblib"),
+    )
+)
+
+PREDICTION_DB_PATH = Path(os.getenv("PREDICTION_DB_PATH", "prediction_database.csv"))
+
+def _append_prediction_row(row: dict) -> None:
+    """Append one prediction row to CSV (create file + header if missing)."""
+    PREDICTION_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = [
+        "time",
+        "slug",
+        "url",
+        "prediction_int",
+        "prediction",
+        "proba_nbc",
+        "proba_fox",
+    ]
+
+    file_exists = PREDICTION_DB_PATH.exists()
+    with PREDICTION_DB_PATH.open("a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        # Ensure only known fields are written
+        writer.writerow({k: row.get(k) for k in fieldnames})
 
 app = FastAPI(
     title="News Outlet Classifier",
@@ -62,7 +93,7 @@ def health():
 
 
 @app.post("/predict", response_model=PredictionResponse)
-def predict(request: PredictionRequest) -> PredictionResponse:
+def predict(request: PredictionRequest, background_tasks: BackgroundTasks) -> PredictionResponse:
     """Predict news outlet (fox vs nbc) from URL slug text.
 
     Args:
@@ -93,9 +124,25 @@ def predict(request: PredictionRequest) -> PredictionResponse:
 
     response = PredictionResponse(slug=slug, prediction=outlet)
 
+    proba_nbc = None
+    proba_fox = None
     if hasattr(model, "predict_proba"):
         proba = model.predict_proba([slug])[0]
-        response.proba_nbc = float(proba[0])
-        response.proba_fox = float(proba[1])
+        proba_nbc = float(proba[0])
+        proba_fox = float(proba[1])
+        response.proba_nbc = proba_nbc
+        response.proba_fox = proba_fox
+
+    # Log request + prediction after response is returned
+    row = {
+        "time": datetime.now(timezone.utc).isoformat(),
+        "slug": slug,
+        "url": request.url,
+        "prediction_int": pred,
+        "prediction": outlet,
+        "proba_nbc": proba_nbc,
+        "proba_fox": proba_fox,
+    }
+    background_tasks.add_task(_append_prediction_row, row)
 
     return response

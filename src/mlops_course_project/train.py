@@ -32,13 +32,13 @@ INV_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
 
 def _load_split(path: Path) -> tuple[list[str], list[int]]:
     """Load and validate a data split from CSV.
-    
+
     Args:
         path: Path to the CSV file.
-        
+
     Returns:
         Tuple of (texts, labels).
-        
+
     Raises:
         ValueError: If file is missing required columns or has no valid rows.
     """
@@ -65,18 +65,18 @@ def _load_split(path: Path) -> tuple[list[str], list[int]]:
     if len(X) == 0:
         logger.error(f"{path} produced 0 rows after filtering. Check preprocessing.")
         raise ValueError(f"{path} produced 0 rows after filtering. Check preprocessing.")
-    
+
     logger.info(f"Split {path.stem}: {len(X)} samples")
     return X, y
 
 
 def _metrics(y_true: list[int], y_pred: list[int]) -> dict[str, Any]:
     """Compute classification metrics.
-    
+
     Args:
         y_true: Ground truth labels.
         y_pred: Predicted labels.
-        
+
     Returns:
         Dictionary with accuracy, precision, recall, F1, confusion matrix, and classification report.
     """
@@ -108,9 +108,9 @@ def train(cfg: DictConfig) -> None:
     """
     logger.info("Starting training pipeline")
     logger.debug(f"Config: {OmegaConf.to_yaml(cfg)}")
-    
-    repo_root = Path(get_original_cwd())     # repo root where you launched
-    run_dir = Path.cwd()                     # hydra run dir (because chdir: true)
+
+    repo_root = Path(get_original_cwd())  # repo root where you launched
+    run_dir = Path.cwd()  # hydra run dir (because chdir: true)
     logger.debug(f"Repo root: {repo_root}, Run dir: {run_dir}")
 
     processed_dir = repo_root / cfg.processed_dir
@@ -132,11 +132,13 @@ def train(cfg: DictConfig) -> None:
     X_train, y_train = _load_split(train_path)
     X_val, y_val = _load_split(val_path)
     X_test, y_test = _load_split(test_path)
-    
+
     logger.info(f"Dataset sizes - Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
 
     logger.info("Creating baseline model (TF-IDF + LogisticRegression)")
-    logger.debug(f"Model parameters - max_features: {cfg.max_features}, ngram_range: ({cfg.ngram_min}, {cfg.ngram_max}), min_df: {cfg.min_df}, C: {cfg.C}, max_iter: {cfg.max_iter}")
+    logger.debug(
+        f"Model parameters - max_features: {cfg.max_features}, ngram_range: ({cfg.ngram_min}, {cfg.ngram_max}), min_df: {cfg.min_df}, C: {cfg.C}, max_iter: {cfg.max_iter}"
+    )
     pipeline = create_baseline_model(
         seed=cfg.seed,
         max_features=cfg.max_features,
@@ -159,7 +161,7 @@ def train(cfg: DictConfig) -> None:
     logger.info("Computing validation metrics")
     val_metrics = _metrics(y_val, val_pred)
     logger.info(f"Validation - Accuracy: {val_metrics['accuracy']:.4f}, F1: {val_metrics['f1']:.4f}")
-    
+
     logger.info("Computing test metrics")
     test_metrics = _metrics(y_test, test_pred)
     logger.info(f"Test - Accuracy: {test_metrics['accuracy']:.4f}, F1: {test_metrics['f1']:.4f}")
@@ -180,7 +182,7 @@ def train(cfg: DictConfig) -> None:
     with metrics_out.open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     logger.info(f"Saved metrics to: {metrics_out}")
-    
+
     logger.info("Training pipeline completed successfully")
 
 
@@ -192,6 +194,7 @@ def main(cfg: DictConfig) -> None:
     except Exception as e:
         logger.error(f"Training failed: {e}", exc_info=True)
         raise
+
 
 if __name__ == "__main__":
     main()

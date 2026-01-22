@@ -27,9 +27,7 @@ def predict(
     if url:
         slug_extracted = _url_to_slug_text(url)
         if not slug_extracted:
-            raise typer.BadParameter(
-                "Could not extract a valid slug from URL (it may be a section page or too short)."
-            )
+            raise typer.BadParameter("Could not extract a valid slug from URL (it may be a section page or too short).")
         slug = slug_extracted
 
     if not model_path.exists():

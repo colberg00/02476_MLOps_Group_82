@@ -13,12 +13,10 @@ def _write_dummy_raw_csv(data_path: Path, n_per_class: int = 25) -> None:
     data_path.mkdir(parents=True, exist_ok=True)
 
     fox_urls = [
-        f"https://www.foxnews.com/politics/blinken-meets-with-qatars-prime-minister-{i}"
-        for i in range(n_per_class)
+        f"https://www.foxnews.com/politics/blinken-meets-with-qatars-prime-minister-{i}" for i in range(n_per_class)
     ]
     nbc_urls = [
-        f"https://www.nbcnews.com/politics/immigration/abolish-ice-democratic-messaging-{i}"
-        for i in range(n_per_class)
+        f"https://www.nbcnews.com/politics/immigration/abolish-ice-democratic-messaging-{i}" for i in range(n_per_class)
     ]
 
     df = pd.DataFrame({"url": fox_urls + nbc_urls})

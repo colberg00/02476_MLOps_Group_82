@@ -34,6 +34,12 @@ jobs:
       - name: Install specific PyTorch version
         run: uv pip install torch==${{ matrix.torch-version }} --force-reinstall
 
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+      - name: Format check with ruff
+        run: uv run ruff format . --check
+
       - name: Run pytest
         run: uv run pytest tests/ -v --tb=short
 

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import typer
 from joblib import dump
 from sklearn.metrics import (
     accuracy_score,

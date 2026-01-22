@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 import pandas as pd
 import typer
 from torch.utils.data import Dataset
-from typing import Callable
 from datasets import load_dataset
 from loguru import logger
 
@@ -232,7 +231,7 @@ class MyDataset(Dataset):
         )
         summary.to_csv(output_folder / "split_summary.csv", index=False)
         logger.info(f"Wrote summary to {output_folder / 'split_summary.csv'}")
-        logger.info(f"Preprocessing complete")
+        logger.info("Preprocessing complete")
 
 
 def download_dataset(
@@ -246,7 +245,7 @@ def download_dataset(
     logger.info("Starting dataset download from Hugging Face (Jia555/cis519_news_urls)")
     try:
         dataset = load_dataset('Jia555/cis519_news_urls')
-        logger.info(f"Successfully downloaded dataset")
+        logger.info("Successfully downloaded dataset")
     except Exception as e:
         logger.error(f"Failed to download dataset: {e}")
         raise

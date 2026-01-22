@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
+        torch-version: ["2.9.1"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Install specific PyTorch version
+        run: uv pip install torch==${{ matrix.torch-version }} --force-reinstall
+
+      - name: Run pytest
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Run pre-commit hooks
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: uv run pre-commit run --all-files || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}-torch-${{ matrix.torch-version }}
+          path: |
+            logs/
+            .pytest_cache/
+          if-no-files-found: ignore
+

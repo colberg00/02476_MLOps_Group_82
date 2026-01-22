@@ -7,6 +7,7 @@ from sklearn.pipeline import Pipeline
 
 class Model(nn.Module):
     """Just a dummy model to show how to structure your code"""
+
     def __init__(self):
         super().__init__()
         self.layer = nn.Linear(1, 1)

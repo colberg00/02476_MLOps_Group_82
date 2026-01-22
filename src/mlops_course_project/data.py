@@ -76,13 +76,13 @@ def _url_to_slug_text(url: str) -> str:
 
 def _find_raw_file(data_path: Path) -> Path:
     """Find raw data file in directory.
-    
+
     Args:
         data_path: Path to directory or file.
-        
+
     Returns:
         Path to the raw data file.
-        
+
     Raises:
         FileNotFoundError: If no data file found.
     """
@@ -111,10 +111,10 @@ def _find_raw_file(data_path: Path) -> Path:
 
 def _read_urls(file_path: Path) -> pd.DataFrame:
     """Read URLs from file.
-    
+
     Args:
         file_path: Path to the file containing URLs.
-        
+
     Returns:
         DataFrame with URL column.
     """
@@ -170,7 +170,7 @@ class MyDataset(Dataset):
             ValueError: If no data remains after filtering.
         """
         logger.info("Starting preprocessing")
-        raw_file = preferred if preferred.exists() else _find_raw_file(self.data_path)  
+        raw_file = preferred if preferred.exists() else _find_raw_file(self.data_path)
         df = _read_urls(raw_file)
         logger.info(f"Raw data: {len(df)} rows")
 
@@ -225,8 +225,16 @@ class MyDataset(Dataset):
             {
                 "split": ["train", "val", "test"],
                 "rows": [len(train), len(val), len(test)],
-                "fox": [int((train["outlet"] == "fox").sum()), int((val["outlet"] == "fox").sum()), int((test["outlet"] == "fox").sum())],
-                "nbc": [int((train["outlet"] == "nbc").sum()), int((val["outlet"] == "nbc").sum()), int((test["outlet"] == "nbc").sum())],
+                "fox": [
+                    int((train["outlet"] == "fox").sum()),
+                    int((val["outlet"] == "fox").sum()),
+                    int((test["outlet"] == "fox").sum()),
+                ],
+                "nbc": [
+                    int((train["outlet"] == "nbc").sum()),
+                    int((val["outlet"] == "nbc").sum()),
+                    int((test["outlet"] == "nbc").sum()),
+                ],
             }
         )
         summary.to_csv(output_folder / "split_summary.csv", index=False)
@@ -238,22 +246,22 @@ def download_dataset(
     data_path: Path = Path("data/cis519_news_urls"),
 ) -> None:
     """Download dataset from Hugging Face and save to local directory.
-    
+
     Args:
         data_path: Directory to save the downloaded dataset.
     """
     logger.info("Starting dataset download from Hugging Face (Jia555/cis519_news_urls)")
     try:
-        dataset = load_dataset('Jia555/cis519_news_urls')
+        dataset = load_dataset("Jia555/cis519_news_urls")
         logger.info("Successfully downloaded dataset")
     except Exception as e:
         logger.error(f"Failed to download dataset: {e}")
         raise
-    
+
     # Create data directory if it doesn't exist
     data_path.mkdir(parents=True, exist_ok=True)
     logger.debug(f"Created data directory: {data_path}")
-    
+
     # Save each split to CSV
     for split_name, split_data in dataset.items():
         logger.debug(f"Converting {split_name} split to DataFrame")
@@ -278,6 +286,7 @@ def preprocess(
 
 
 app = typer.Typer(help="Dataset utilities")
+
 
 @app.command()
 def download(
@@ -350,6 +359,7 @@ def ensure_downloaded(data_path: Path = Path("data/cis519_news_urls")) -> None:
     combined.to_csv(out_file, index=False)
     logger.info(f"Saved combined raw dataset to: {out_file.resolve()} ({len(combined)} rows)")
 
+
 def run_pipeline(
     data_path: Path = Path("data/cis519_news_urls"),
     output_folder: Path = Path("data/processed"),
@@ -357,7 +367,7 @@ def run_pipeline(
     force_preprocess: bool = False,
 ) -> None:
     logger.info(f"Starting pipeline: force_download={force_download}, force_preprocess={force_preprocess}")
-    
+
     if force_download:
         logger.info("Force download enabled - deleting existing raw.csv")
         # Force re-download by deleting raw.csv if present
@@ -377,8 +387,9 @@ def run_pipeline(
     else:
         logger.info(f"Processed data already present in: {output_folder.resolve()}")
         logger.debug(f"Found: {', '.join(PROCESSED_FILES)}")
-    
+
     logger.info("Pipeline completed successfully")
+
 
 def main(
     data_path: Path = Path("data/cis519_news_urls"),

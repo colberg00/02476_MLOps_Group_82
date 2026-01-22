@@ -8,7 +8,7 @@ from loguru import logger
 
 def setup_logging(script_name: str = "project") -> None:
     """Set up loguru configuration for the package.
-    
+
     Args:
         script_name: Name of the script for log file naming.
     """

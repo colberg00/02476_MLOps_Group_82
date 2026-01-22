@@ -1,42 +1,14 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from urllib.parse import urlparse
 
 import typer
 from joblib import load
 
+from mlops_course_project.data import _url_to_slug_text
+
 
 LABEL_MAP = {0: "nbc", 1: "fox"}
-
-
-def _url_to_slug_text(url: str) -> str:
-    p = urlparse(url)
-    path = p.path.lower().strip("/")
-    if not path:
-        return ""
-
-    # last segment only (slug)
-    slug = path.split("/")[-1]
-
-    # remove print suffix + NBC article id suffix
-    slug = re.sub(r"\.print$", "", slug)
-    slug = re.sub(r"-rcna\d+$", "", slug)
-
-    # tokenize
-    s = slug.replace("-", " ").replace("_", " ")
-    s = re.sub(r"[^a-z0-9\s]", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-
-    # drop very short slugs (likely section landing pages)
-    if len(s.split()) < 3:
-        return ""
-
-    # remove outlet tokens if they appear
-    s = re.sub(r"\b(fox|foxnews|nbc|nbcnews)\b", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
 
 
 def predict(
@@ -53,7 +25,7 @@ def predict(
         raise typer.BadParameter("Provide either --slug or --url.")
 
     if url:
-        slug_extracted = url_to_slug_text(url)
+        slug_extracted = _url_to_slug_text(url)
         if not slug_extracted:
             raise typer.BadParameter(
                 "Could not extract a valid slug from URL (it may be a section page or too short)."

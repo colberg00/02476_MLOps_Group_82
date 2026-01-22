@@ -1,5 +1,6 @@
 """FastAPI application for news outlet classification."""
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +12,7 @@ from mlops_course_project.data import _url_to_slug_text
 
 
 LABEL_MAP = {0: "nbc", 1: "fox"}
-DEFAULT_MODEL_PATH = Path("models/baseline.joblib")
+DEFAULT_MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/baseline.joblib"))
 
 app = FastAPI(
     title="News Outlet Classifier",

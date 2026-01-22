@@ -30,7 +30,7 @@
 - [X] Code coverage (M16) --- Kelvin
 - [X] CI on GitHub (M17) --- Christian
 - [X] CI caching + multi-os/python/torch testing (M17) --- Christian
-- [ ] Add linting step in CI (M17) --- Christian
+- [X] Add linting step in CI (M17) --- Christian
 - [X] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)

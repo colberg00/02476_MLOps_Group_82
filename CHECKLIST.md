@@ -13,7 +13,7 @@
 - [X] Follow coding practices (pep8) (M7)
 - [X] Add type hints + document essential parts (M7)
 - [ ] Setup version control for data / part of data (M8) --- Jacob
-- [½] Add CLI commands where it makes sense (M9) --- Kelvin
+- [ ] Add CLI commands where it makes sense (M9) --- Kelvin
 - [X] Construct one or more dockerfiles (M10) --- Kelvin
 - [X] Build dockerfiles locally and verify they work (M10) --- Kelvin
 - [X] Write one or more config files for experiments (M11) --- Oskar
@@ -28,10 +28,10 @@
 - [X] Unit tests for data code (M16) --- Kelvin
 - [X] Unit tests for model/training (M16) --- Kelvin
 - [X] Code coverage (M16) --- Kelvin
-- [ ] CI on GitHub (M17) --- Christian
-- [ ] CI caching + multi-os/python/torch testing (M17) --- Christian
+- [X] CI on GitHub (M17) --- Christian
+- [X] CI caching + multi-os/python/torch testing (M17) --- Christian
 - [ ] Add linting step in CI (M17) --- Christian
-- [ ] Pre-commit hooks (M18) --- Christian
+- [X] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)
 - [ ] Create GCP bucket for data + connect to DVC (M21) --- Jacob

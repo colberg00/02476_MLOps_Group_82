@@ -619,7 +619,9 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 >
 > Answer:
 
---- question 29 fill here ---
+The starting point of the diagram is our local development environment, where we run the project scripts through a reproducible Python setup managed with uv. Locally, we use Hydra for configuration management, Typer for CLI entrypoints (e.g., running preprocessing/training), Loguru for structured logging, and pandas for data handling. During experimentation we download the dataset from Hugging Face Hub using the datasets library, train a baseline text classifier with scikit-learn, and serialize the trained model with joblib.
+
+When we are ready to integrate changes, the developer uses pre-commit hooks before committing and pushing to GitHub. A push and/or pull request then triggers GitHub Actions (CI), where we run code quality and correctness checks: ruff (lint/format), mypy (type checking), and pytest unit tests (covering data/model/train/API components) with a coverage report. This setup helps ensure new changes do not break core functionality before they are merged.
 
 ### Question 30
 

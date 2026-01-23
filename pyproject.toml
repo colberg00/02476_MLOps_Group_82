@@ -33,6 +33,7 @@ dependencies = [
     "torch==2.9.1",
     "typer==0.15.1",
     "uvicorn==0.34.0",
+    "wandb>=0.24.0",
 ]
 
 [dependency-groups]

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import wandb
 from joblib import dump
 from sklearn.metrics import (
     accuracy_score,
@@ -109,9 +110,18 @@ def train(cfg: DictConfig) -> None:
     logger.info("Starting training pipeline")
     logger.debug(f"Config: {OmegaConf.to_yaml(cfg)}")
 
-    repo_root = Path(get_original_cwd())  # repo root where you launched
-    run_dir = Path.cwd()  # hydra run dir (because chdir: true)
+    repo_root = Path(get_original_cwd())
+    run_dir = Path.cwd()
     logger.debug(f"Repo root: {repo_root}, Run dir: {run_dir}")
+
+    wandb_config = OmegaConf.to_container(cfg, resolve=True)
+    wandb.init(
+        project=cfg.get("wandb_project", "news-classifier"),
+        entity=cfg.get("wandb_entity", None),
+        config=wandb_config,
+        mode=cfg.get("wandb_mode", "online"),
+    )
+    logger.info(f"Initialized wandb run: {wandb.run.name}")
 
     processed_dir = repo_root / cfg.processed_dir
 
@@ -134,6 +144,14 @@ def train(cfg: DictConfig) -> None:
     X_test, y_test = _load_split(test_path)
 
     logger.info(f"Dataset sizes - Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
+
+    wandb.log(
+        {
+            "dataset/train_size": len(X_train),
+            "dataset/val_size": len(X_val),
+            "dataset/test_size": len(X_test),
+        }
+    )
 
     logger.info("Creating baseline model (TF-IDF + LogisticRegression)")
     logger.debug(
@@ -162,9 +180,44 @@ def train(cfg: DictConfig) -> None:
     val_metrics = _metrics(y_val, val_pred)
     logger.info(f"Validation - Accuracy: {val_metrics['accuracy']:.4f}, F1: {val_metrics['f1']:.4f}")
 
+    wandb.log(
+        {
+            "val/accuracy": val_metrics["accuracy"],
+            "val/precision": val_metrics["precision"],
+            "val/recall": val_metrics["recall"],
+            "val/f1": val_metrics["f1"],
+        }
+    )
+
     logger.info("Computing test metrics")
     test_metrics = _metrics(y_test, test_pred)
     logger.info(f"Test - Accuracy: {test_metrics['accuracy']:.4f}, F1: {test_metrics['f1']:.4f}")
+
+    wandb.log(
+        {
+            "test/accuracy": test_metrics["accuracy"],
+            "test/precision": test_metrics["precision"],
+            "test/recall": test_metrics["recall"],
+            "test/f1": test_metrics["f1"],
+        }
+    )
+
+    wandb.log(
+        {
+            "confusion_matrix/val": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=y_val,
+                preds=val_pred,
+                class_names=[INV_LABEL_MAP[0], INV_LABEL_MAP[1]],
+            ),
+            "confusion_matrix/test": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=y_test,
+                preds=test_pred,
+                class_names=[INV_LABEL_MAP[0], INV_LABEL_MAP[1]],
+            ),
+        }
+    )
 
     results: dict[str, Any] = {
         "config": OmegaConf.to_container(cfg, resolve=True),
@@ -183,6 +236,21 @@ def train(cfg: DictConfig) -> None:
         json.dump(results, f, indent=2)
     logger.info(f"Saved metrics to: {metrics_out}")
 
+    artifact = wandb.Artifact(
+        name="news-classifier-model",
+        type="model",
+        description="TF-IDF + LogisticRegression news outlet classifier",
+        metadata={
+            "accuracy": test_metrics["accuracy"],
+            "f1": test_metrics["f1"],
+            "config": wandb_config,
+        },
+    )
+    artifact.add_file(str(model_out))
+    wandb.log_artifact(artifact)
+    logger.info(f"Logged model artifact to wandb: {artifact.name}")
+
+    wandb.finish()
     logger.info("Training pipeline completed successfully")
 
 

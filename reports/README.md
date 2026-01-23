@@ -271,7 +271,11 @@ Yes, we used both branches and pull requests throughout the project. Our workflo
 >
 > Answer:
 
---- question 10 fill here ---
+Yes, we used DVC for managing data in the project, although in a limited and mainly exploratory manner. DVC was set up to track the dataset using .dvc metadata files, keeping large data files out of Git and enabling the use of a Google Cloud Storage (GCS) remote. This ensured that a specific version of the dataset could be associated with each Git commit.
+
+In reality the dataset remained static throughout most of the project, as the ML part of the project was intentionally kept simpler in order to focus on the broader MLOps components, fx containerization, deployment, and cloud infrastructure. Therefore DVC was not used extensively for iterative data updates or experiment comparison.
+
+Still, the setup showed how data version control can support reproducibility and collaboration in projects where data changes more frequently. If our project were extended to include continuous data collection or retraining on updated news headlines, DVC would play a more central role in managing and reproducing experiments across machines and environments.
 
 ### Question 11
 

@@ -5,6 +5,8 @@ import pstats
 from pathlib import Path
 import os
 import json
+import subprocess
+import shutil
 
 import pandas as pd
 import numpy as np
@@ -51,6 +53,70 @@ setup_logging("data_drift")
 LABEL_MAP = {"nbc": 0, "fox": 1}
 
 REVERSE_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
+
+
+# --- Reference data availability (cloud-safe, DVC-based) ---
+# In Cloud Run the container filesystem won't contain `data/processed/train.csv` unless we materialize it.
+# Professional flow: pull raw data via DVC remote, then run preprocessing to generate the processed reference CSV.
+DVC_RAW_TARGET = os.getenv("DVC_RAW_TARGET", "data/raw/news_urls.csv").strip() or "data/raw/news_urls.csv"
+
+
+def ensure_reference_csv(reference_csv: Path) -> Path:
+    """Ensure the reference CSV exists locally.
+
+    Behavior:
+    - If `reference_csv` already exists, return it.
+    - Otherwise, try to materialize it by:
+      1) `dvc pull` the raw dataset target (from the project's configured DVC remote)
+      2) run preprocessing to generate `data/processed/train.csv`
+
+    This keeps local/dev behavior unchanged while enabling Cloud Run to use the shared DVC remote.
+    """
+    if reference_csv.exists():
+        return reference_csv
+
+    # DVC must be available in the runtime environment.
+    if shutil.which("dvc") is None:
+        raise FileNotFoundError(
+            f"Reference CSV not found: {reference_csv} (and 'dvc' is not installed in the runtime)."
+        )
+
+    logger.info(f"Reference CSV missing: {reference_csv}. Attempting to pull raw data via DVC: {DVC_RAW_TARGET}")
+
+    # 1) Pull raw data via DVC (from configured remote)
+    try:
+        subprocess.run(
+            ["dvc", "pull", DVC_RAW_TARGET],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except Exception as e:
+        raise FileNotFoundError(
+            f"Reference CSV not found: {reference_csv}. Failed to pull raw data with DVC target '{DVC_RAW_TARGET}': {e}"
+        )
+
+    # 2) Run preprocessing to generate processed/train.csv
+    logger.info("Running preprocessing to generate processed reference CSV")
+    try:
+        subprocess.run(
+            ["python", "-m", "mlops_course_project.data", "run-preprocess"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except Exception as e:
+        raise FileNotFoundError(
+            f"Reference CSV not found: {reference_csv}. DVC pull succeeded but preprocessing failed: {e}"
+        )
+
+    if not reference_csv.exists():
+        raise FileNotFoundError(f"Reference CSV not found: {reference_csv}")
+
+    logger.info(f"Reference CSV is now available: {reference_csv}")
+    return reference_csv
 
 
 def standardize_current_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -215,8 +281,8 @@ def run_drift_report(
     logger.debug(f"Reference CSV: {reference_csv}")
     logger.debug(f"Current CSV: {current_csv}")
 
-    if not reference_csv.exists():
-        raise FileNotFoundError(f"Reference CSV not found: {reference_csv}")
+    reference_csv = ensure_reference_csv(reference_csv)
+
     # Current data may come from event logs (local folder or GCS). Only require the CSV if we fall back to it.
     has_local_events = PREDICTION_EVENTS_DIR.exists() and any(PREDICTION_EVENTS_DIR.glob("*.json"))
     if not PREDICTION_GCS_BUCKET and not has_local_events and not current_csv.exists():

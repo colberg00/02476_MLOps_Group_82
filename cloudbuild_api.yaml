@@ -1,0 +1,21 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Build API image'
+  args:
+    [
+      'build',
+      '-f', 'dockerfiles/api.dockerfile',
+      '-t', 'europe-west1-docker.pkg.dev/$PROJECT_ID/container-registry/mlops82-api:data-drift',
+      '.'
+    ]
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'Push API image'
+  args:
+    [
+      'push',
+      'europe-west1-docker.pkg.dev/$PROJECT_ID/container-registry/mlops82-api:data-drift'
+    ]
+images:
+- 'europe-west1-docker.pkg.dev/$PROJECT_ID/container-registry/mlops82-api:data-drift'
+options:
+  logging: CLOUD_LOGGING_ONLY

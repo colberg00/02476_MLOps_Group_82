@@ -490,7 +490,11 @@ We did not set up a fully automated or reproducible cloud training pipeline usin
 >
 > Answer:
 
---- question 22 fill here ---
+We did not fully train our model in the cloud using either Compute Engine or Vertex AI. While we explored the possibility of running training on Compute Engine as part of the course exercises, this was done in a limited and exploratory manner and was not integrated into a reproducible cloud-based training pipeline.
+
+In practice, model training was primarily performed locally. This decision was influenced by the small size of the dataset, the simplicity of the baseline model, and time constraints within the project. Setting up a fully automated cloud training workflow would have added additional complexity without providing significant benefits for this specific use case.
+
+Instead, cloud resources were mainly used for container builds and deployment of the inference API. This allowed us to focus on the MLOps aspects most relevant to the project, such as CI/CD, containerization, and deployment, while still gaining exposure to cloud-based experimentation.
 
 ## Deployment
 

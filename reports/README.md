@@ -134,7 +134,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
-s224345,s224343, s225207
+s224345,s224343,s225207, s223463
 
 ### Question 3
 > **Did you end up using any open-source frameworks/packages not covered in the course during your project? If so**
@@ -663,8 +663,7 @@ In addition, we have a few optional, developer-only outputs that are not part of
 >
 > Answer:
 
---- question 30 fill here ---
-(Kelvin draft suggestion): One challenge was that while we had tests to if our code worked when we pushed, it didnt ensure that the solution was compatible with other parts of the project. This means that sometimes one solution would make it much more difficult for another part of the project to be implemented. This has posed some problems, and the best solution to this problem is better communication between each group member.
+One challenge was that while we had tests to if our code worked when we pushed, it didnt ensure that the solution was compatible with other parts of the project. This means that sometimes one solution would make it much more difficult for another part of the project to be implemented. This has posed some problems, and the best solution to this problem is better communication between each group member.
 Another issue was following best practices around Github/version control in general. Commit message semantics, pulling vs fetching which could cause unnecessary worrying, merging.
 
 
@@ -684,8 +683,8 @@ Another issue was following best practices around Github/version control in gene
 > *We have used ChatGPT to help debug our code. Additionally, we used GitHub Copilot to help write some of our code.*
 > Answer:
 
---- question 31 fill here ---
 Student s224345 was responsible for setting up cookie cutter template, CLI commands, building local dockerfiles, building unit testing for data code and model/training, ensuring code coverage.
+
 Student s224343 was responsible for setting up logging for the project, linking it to W&B, setting up continous integration workflows (General CI, caching, multi-os, pre commit hooks), developing the API integration and load testing.
 
 Student s223463 was primarily responsible for the cloud-related work in the project. This included setting up and experimenting with GCP services (Cloud Build, Artifact Registry, Cloud Run, Cloud Storage, and Compute Engine), deploying the inference API, and handling cloud-based debugging and experimentation. He was also responsible for the DVC setup and documenting cloud usage in the report.

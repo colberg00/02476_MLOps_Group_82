@@ -61,8 +61,8 @@ will check the repositories and the code to verify your answers.
 * [X] Remember to either fill out the `requirements.txt`/`requirements_dev.txt` files or keeping your
     `pyproject.toml`/`uv.lock` up-to-date with whatever dependencies that you are using (M2+M6)
 * [X] Remember to comply with good coding practices (`pep8`) while doing the project (M7)
-* [ ] Do a bit of code typing and remember to document essential parts of your code (M7)
-* [ ] Setup version control for your data or part of your data (M8)
+* [X] Do a bit of code typing and remember to document essential parts of your code (M7)
+* [X] Setup version control for your data or part of your data (M8)
 * [X] Add command line interfaces and project commands to your code where it makes sense (M9)
 * [X] Construct one or multiple docker files for your code (M10)
 * [X] Build the docker files locally and make sure they work as intended (M10)
@@ -70,7 +70,7 @@ will check the repositories and the code to verify your answers.
 * [X] Used Hydra to load the configurations and manage your hyperparameters (M11)
 * [x] Use profiling to optimize your code (M12)
 * [X] Use logging to log important events in your code (M14)
-* [ ] Use Weights & Biases to log training progress and other important metrics/artifacts in your code (M14)
+* [X] Use Weights & Biases to log training progress and other important metrics/artifacts in your code (M14)
 * [x] Consider running a hyperparameter optimization sweep (M14)
 * [ ] Use PyTorch-lightning (if applicable) to reduce the amount of boilerplate in your code (M15)
 
@@ -80,18 +80,18 @@ will check the repositories and the code to verify your answers.
 * [X] Write unit tests related to model construction and or model training (M16)
 * [X] Calculate the code coverage (M16)
 * [X] Get some continuous integration running on the GitHub repository (M17)
-* [ ] Add caching and multi-os/python/pytorch testing to your continuous integration (M17)
-* [ ] Add a linting step to your continuous integration (M17)
-* [ ] Add pre-commit hooks to your version control setup (M18)
+* [X] Add caching and multi-os/python/pytorch testing to your continuous integration (M17)
+* [X] Add a linting step to your continuous integration (M17)
+* [X] Add pre-commit hooks to your version control setup (M18)
 * [ ] Add a continues workflow that triggers when data changes (M19)
 * [ ] Add a continues workflow that triggers when changes to the model registry is made (M19)
-* [ ] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
-* [ ] Create a trigger workflow for automatically building your docker images (M21)
-* [ ] Get your model training in GCP using either the Engine or Vertex AI (M21)
-* [ ] Create a FastAPI application that can do inference using your model (M22)
-* [ ] Deploy your model in GCP using either Functions or Run as the backend (M23)
-* [ ] Write API tests for your application and setup continues integration for these (M24)
-* [ ] Load test your application (M24)
+* [X] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
+* [X] Create a trigger workflow for automatically building your docker images (M21)
+* [X] Get your model training in GCP using either the Engine or Vertex AI (M21)
+* [X] Create a FastAPI application that can do inference using your model (M22)
+* [X] Deploy your model in GCP using either Functions or Run as the backend (M23)
+* [X] Write API tests for your application and setup continues integration for these (M24)
+* [X] Load test your application (M24)
 * [ ] Create a more specialized ML-deployment API using either ONNX or BentoML, or both (M25)
 * [ ] Create a frontend for your API (M26)
 
@@ -642,11 +642,12 @@ No extra implementations, not covered by the questions.
 >
 > Answer:
 
+![diagram](figures/diagram.png)
 The starting point of the diagram is our local development environment, where we run the project scripts through a reproducible Python setup managed with uv. Locally, we use Hydra for configuration management, Typer for CLI entrypoints (e.g., running preprocessing/training), Loguru for structured logging, and pandas for data handling. During experimentation we download the dataset from Hugging Face Hub using the datasets library, train a baseline text classifier with scikit-learn, and serialize the trained model with joblib.
 
 When we are ready to integrate changes, the developer uses pre-commit hooks before committing and pushing to GitHub. A push and/or pull request then triggers GitHub Actions (CI), where we run code quality and correctness checks: ruff (lint/format), mypy (type checking), and pytest unit tests (covering data/model/train/API components) with a coverage report. This setup helps ensure new changes do not break core functionality before they are merged.
 
-For cloud deployment, we kept it simple: when we push to main, Cloud Build is triggered. Cloud Build then builds our Docker image and pushes it to Artifact Registry. From there, Cloud Run pulls the newest image and serves our FastAPI inference service as an HTTP endpoint. The trained model is bundles directly inside the Docker image. Cloud Logging then automatically collects logs from Cloud Run. 
+For cloud deployment, we kept it simple: when we push to main, Cloud Build is triggered. Cloud Build then builds our Docker image and pushes it to Artifact Registry. From there, Cloud Run pulls the newest image and serves our FastAPI inference service as an HTTP endpoint. The trained model is bundles directly inside the Docker image. Cloud Logging then automatically collects logs from Cloud Run.
 
 In addition, we have a few optional, developer-only outputs that are not part of the user inference flow. We can generate profiling reports by running cProfile on our main scripts and visualizing the results with SnakeViz, so we can see where runtime is spent. We also implemented data drift monitoring with Evidently, which we run manually to evaluate how robust the system is under distribution shifts. During development we also used GCS + DVC for experimental data versioning and Compute Engine for ad-hoc experimentation/setup, but these are not part of the final inference on Cloud Run.
 

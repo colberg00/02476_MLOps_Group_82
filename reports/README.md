@@ -611,7 +611,11 @@ Since this was a course project with limited scope and a simple baseline model, 
 >
 > Answer:
 
---- question 27 fill here ---
+Overall, our cloud usage during the project was very limited. The total usage cost was approximately $0.56, which was fully covered by the $50 GCP education credits provided for the course, resulting in a net cost of $0.00. All usage was billed through a single shared GCP billing account.
+
+The majority of the cloud usage was driven by one group member who was responsible for setting up and experimenting with the cloud infrastructure. The main expense came from brief use of Compute Engine (around $0.44), where an e2-medium instance was used for exploratory purposes. Minor usage was also recorded for Cloud Run, VM Manager, and networking, while Cloud Build and Cloud Storage remained within the free tier. The dataset used in the project was small, with news_urls.csv being 4.4 MB, which further contributed to negligible storage and data transfer costs.
+
+Overall, the low cost reflects our usage pattern: model training was primarily done locally, while cloud resources were used selectively for experimentation, container builds, and deployment of a lightweight inference API.
 
 ### Question 28
 

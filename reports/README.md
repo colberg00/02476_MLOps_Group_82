@@ -148,7 +148,7 @@ s224345,s224343
 >
 > Answer:
 
---- question 3 fill here ---
+No, not that we can see right now.
 
 ## Coding environment
 
@@ -186,8 +186,7 @@ To obtain an exact copy of the development environment, a new team member would 
 >
 > Answer:
 
---- question 5 fill here ---
-we have added:
+From the cookiecutter template we have filled out the mlops_course_project, tests, configs, dockerfiles, docs, and workflows folders. We renamed models.py to model.py (by mistake I think) and added predict.py for CLI predictions and data_drift.py for drift detection. We did not include the notebooks/ folder as we did not use Jupyter notebooks, and replaced evaluate.py and visualize.py with W&B integration for experiment tracking. We removed requirements.txt and requirements_dev.txt in favor of managing all dependencies through pyproject.toml with uv. We added several files: cloudbuild.yaml for GCP Cloud Build CI/CD, AGENTS.md for coding agent guidance, CHECKLIST.md for project tracking, and DVC configuration (.dvc, .dvcignore) for data version control. The outputs and logs folders were added for Hydra run outputs and application logging. We also added prediction_database.csv and prediction_events for API prediction logging, and locustfile.py in tests for load testing.
 
 
 ### Question 6
@@ -256,7 +255,7 @@ Even if our code coverage were close to 100%, we would not consider the system t
 >
 > Answer:
 
-Yes, we used both branches and pull requests throughout the project. Our workflow was set up so that each team member worked on feature branches rather than committing directly to main. When a feature was ready, we opened a pull request to merge it into main. This approach helps in several ways: it keeps main stable since broken code never gets merged directly, it enables code review where teammates can catch issues the author missed, and it provides a clear history of what changes were made and why. For a team of multiple contributors, this prevented the chaos of conflicting changes and kept our codebase consistent.
+We used both branches and pull requests throughout the project. Our workflow was set up so that each team member worked on feature branches rather than committing directly to main. When a feature was ready, we opened a pull request to merge it into main. This approach helps in several ways: it keeps main stable since broken code never gets merged directly, it enables code review where teammates can catch issues the author missed, and it provides a clear history of what changes were made and why. For a team of multiple contributors, this prevented the chaos of conflicting changes and kept our codebase consistent.
 
 ### Question 10
 
@@ -544,12 +543,7 @@ For unit testing, we used pytest to test our API endpoints. The tests are locate
 
 For load testing, we used Locust. Our test file (`locustfile.py`) simulates users hitting the API with weighted tasks: the `/predict` endpoint gets 7x more traffic than `/health` and `/` (reflecting real usage patterns). Users wait 1-3 seconds between requests. Here is an example of this testing, with 200 users and 20 users per second.
 
-| Type | Name        | # reqs | # fails       | Avg | Min | Max | Med | req/s | failures/s |
-|------|-------------|--------|---------------|-----|-----|-----|-----|-------|------------|
-| GET  | /           | 655    | 0 (0.00%)     | 3   | 0   | 28  | 2   | 10.22 | 0.00       |
-| GET  | /health     | 699    | 0 (0.00%)     | 3   | 0   | 39  | 2   | 10.91 | 0.00       |
-| POST | /predict    | 4652   | 0 (0.00%)     | 5   | 1   | 55  | 4   | 72.61 | 0.00       |
-|      | **Aggregated** | 6006   | 0 (0.00%)     | 4   | 0   | 55  | 4   | 93.75 | 0.00       |
+![load_test](figures/Load_test.png)
 
 The results show our API handled ~94 requests/second with 0% failure rate. The `/predict` endpoint averaged 5ms response time, with the slowest request at 55ms, solid performance for a classification service. This also reflects the simplicity of the classifier.
 
@@ -635,6 +629,7 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 
 --- question 30 fill here ---
 (Kelvin draft suggestion): One challenge was that while we had tests to if our code worked when we pushed, it didnt ensure that the solution was compatible with other parts of the project. This means that sometimes one solution would make it much more difficult for another part of the project to be implemented. This has posed some problems, and the best solution to this problem is better communication between each group member.
+Another issue was following best practices around Github/version control in general. Commit message semantics, pulling vs fetching which could cause unnecessary worrying, merging.
 
 
 ### Question 31
@@ -654,3 +649,9 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 > Answer:
 
 --- question 31 fill here ---
+Student s224345 was responsible for setting up cookie cutter template, CLI commands, building local dockerfiles, building unit testing for data code and model/training, ensuring code coverage.
+Student s224343 was responsible for setting up logging for the project, linking it to W&B, setting up continous integration workflows (General CI, caching, multi-os, pre commit hooks), developing the API integration and load testing.
+Student Jacob
+Student Oskar
+All group members contributed to coding practices, prokect planning, keeping track of dependencies, and other various tasks.
+We have primarily used Copilot as an AI assistant for debugging and writing code, it even produced a commit, to create a draft of an implementation. Also, ChatGPT and Copilot was used for general troubleshooting along the way, as well as for report writing.

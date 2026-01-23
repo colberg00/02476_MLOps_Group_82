@@ -588,7 +588,11 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 >
 > Answer:
 
---- question 26 fill here ---
+We did not implement monitoring of our deployed model during the project. Apart from basic logs available through Cloud Logging when running the FastAPI service on Cloud Run, no custom metrics or alerting were set up.
+
+For our specific use case, monitoring would be relevant to track request latency and error rates for the prediction endpoint, as well as changes in the distribution of incoming headline URLs over time. This could help identify issues such as failed requests, degraded performance, or shifts in the type of articles being classified that might affect model reliability.
+
+Since this was a course project with limited scope and a simple baseline model, monitoring was not prioritized, but it would be an important addition in a production setting.
 
 ## Overall discussion of project
 

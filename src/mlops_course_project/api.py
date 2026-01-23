@@ -21,7 +21,7 @@ LABEL_MAP = {0: "nbc", 1: "fox"}
 DEFAULT_MODEL_PATH = Path(
     os.getenv(
         "MODEL_PATH",
-        str(Path(__file__).resolve().parent / "models" / "baseline.joblib"),
+        str(Path(__file__).resolve().parent.parent.parent / "models" / "baseline.joblib"),
     )
 )
 

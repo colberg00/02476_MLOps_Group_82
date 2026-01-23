@@ -187,8 +187,7 @@ To obtain an exact copy of the development environment, a new team member would 
 > Answer:
 
 --- question 5 fill here ---
-
-### Question 6
+we have added:
 
 > **Did you implement any rules for code quality and format? What about typing and documentation? Additionally,**
 > **explain with your own words why these concepts matters in larger projects.**
@@ -352,7 +351,13 @@ Our continuous integration setup includes automated unit testing using pytest an
 
 Docker was used to containerize our machine learning training pipeline to ensure reproducibility and portability across different environments. We created a dedicated Docker image for model training, which includes the Python runtime, project dependencies managed via uv, and the project source code. This allows the full data preprocessing and training workflow to be executed in an isolated and consistent environment, independent of the host system configuration.
 
-The Docker image is built locally using a custom Dockerfile located in the repository, and verified by running preprocessing and training commands inside the container while mounting local directories for data and output artifacts. For example, the training image can be executed using a command such as docker run `--rm -v data:/app/data -v models:/app/models mlops82-train:latest`, which runs the training script inside the container and stores outputs on the host machine.
+The Docker image is built locally using a custom Dockerfile located in the repository, and verified by running preprocessing and training commands inside the container while mounting local directories for data and output artifacts. For example, the training image can be executed using a command such as docker run `docker run --rm -v "%cd%\data:/app/data" -v "%cd%\models:/app/models" -v "%cd%\reports:/app/reports" mlops82-train:latest uv run python src/mlops_course_project/train.py
+`, which runs the training script inside the container and stores outputs on the host machine. To do this you must first have downloaded the data and pre-processed it with the commands:
+
+docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py download
+
+docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py run-preprocess
+
 
 This setup ensures that experiments can be reliably reproduced and simplifies collaboration by providing a standardized execution environment. The link to the Dockerfile used for training: https://github.com/colberg00/02476_MLOps_Group_82/blob/845f0deba3701322f50f33d563fcf6bbfa5cda4d/dockerfiles/train.dockerfile
 

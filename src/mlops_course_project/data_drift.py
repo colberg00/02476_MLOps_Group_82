@@ -57,66 +57,160 @@ REVERSE_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
 
 # --- Reference data availability (cloud-safe, DVC-based) ---
 # In Cloud Run the container filesystem won't contain `data/processed/train.csv` unless we materialize it.
-# Professional flow: pull raw data via DVC remote, then run preprocessing to generate the processed reference CSV.
+# Root cause of your 404: the monitoring endpoints require a reference dataset.
+# The correct fix is to materialize the reference via the shared DVC remote (same source of truth as local).
+#
+# Strategy (robust):
+# - If reference CSV exists -> use it.
+# - Else acquire a small lock (Cloud Run may serve concurrent requests).
+# - Prefer reproducing the DVC pipeline for consistency:
+#     1) If `data/processed/train.csv.dvc` exists: `dvc repro --force data/processed/train.csv.dvc`
+#     2) Else if `dvc.yaml` exists: `dvc repro --force`
+# - If no repro pipeline exists, fall back to pulling artifacts:
+#     3) If `<reference>.dvc` exists: `dvc pull <reference>.dvc`
+#     4) Else: `dvc pull <raw_target>` then run preprocessing.
+#
+# Env knobs:
+# - DVC_RAW_TARGET: raw file to pull if we need to build processed reference.
+# - DVC_REMOTE: optional remote name (passes `-r`).
+# - DVC_PULL_JOBS: optional parallel jobs (passes `-j`).
+# - DVC_NO_SCM: default "true" in Cloud Run; passes `--no-scm` to dvc.
+# - REFERENCE_CSV_DVC_PATH: override the reference csv path used by monitoring.
 DVC_RAW_TARGET = os.getenv("DVC_RAW_TARGET", "data/raw/news_urls.csv").strip() or "data/raw/news_urls.csv"
+DVC_REMOTE = os.getenv("DVC_REMOTE", "").strip()
+DVC_PULL_JOBS = os.getenv("DVC_PULL_JOBS", "").strip()
+DVC_NO_SCM = os.getenv("DVC_NO_SCM", "true").strip().lower() in {"1", "true", "yes", "y"}
+REFERENCE_CSV_DVC_PATH = os.getenv("REFERENCE_CSV_DVC_PATH", "").strip()
+
+_DVC_LOCK_PATH = Path(os.getenv("DVC_LOCK_PATH", "/tmp/dvc_materialize.lock"))
+
+
+def _acquire_dvc_lock(timeout_s: int = 300) -> None:
+    """Cross-request lock to avoid concurrent `dvc` runs in Cloud Run."""
+    import time
+
+    start = time.time()
+    while True:
+        try:
+            fd = os.open(str(_DVC_LOCK_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode("utf-8"))
+            os.close(fd)
+            return
+        except FileExistsError:
+            if time.time() - start > timeout_s:
+                raise TimeoutError(f"Timed out waiting for DVC lock: {_DVC_LOCK_PATH}")
+            time.sleep(0.5)
+
+
+def _release_dvc_lock() -> None:
+    try:
+        _DVC_LOCK_PATH.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def _dvc_base_args() -> list[str]:
+    args: list[str] = ["dvc"]
+    if DVC_NO_SCM:
+        args.append("--no-scm")
+    return args
+
+
+def _run_cmd(cmd: list[str], *, label: str) -> None:
+    """Run a command, raising with captured output for actionable logs."""
+    try:
+        res = subprocess.run(
+            cmd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if res.stdout:
+            logger.info(f"{label} output:\n{res.stdout}")
+    except subprocess.CalledProcessError as e:
+        out = e.stdout or ""
+        logger.error(f"{label} failed. Command: {' '.join(cmd)}\nOutput:\n{out}")
+        raise
+
+
+def _dvc_repro(target: str | None = None) -> None:
+    cmd = _dvc_base_args() + ["repro", "--force"]
+    if DVC_REMOTE:
+        cmd += ["-r", DVC_REMOTE]
+    if target:
+        cmd.append(target)
+    _run_cmd(cmd, label=f"dvc repro {target or ''}".strip())
+
+
+def _dvc_pull(target: str) -> None:
+    cmd = _dvc_base_args() + ["pull"]
+    if DVC_REMOTE:
+        cmd += ["-r", DVC_REMOTE]
+    if DVC_PULL_JOBS:
+        cmd += ["-j", DVC_PULL_JOBS]
+    cmd.append(target)
+    _run_cmd(cmd, label=f"dvc pull {target}")
+
+
+def _preprocess() -> None:
+    _run_cmd(["python", "-m", "mlops_course_project.data", "run-preprocess"], label="preprocess")
 
 
 def ensure_reference_csv(reference_csv: Path) -> Path:
-    """Ensure the reference CSV exists locally.
+    """Ensure the reference CSV exists locally via the shared DVC remote."""
+    if REFERENCE_CSV_DVC_PATH:
+        reference_csv = Path(REFERENCE_CSV_DVC_PATH)
 
-    Behavior:
-    - If `reference_csv` already exists, return it.
-    - Otherwise, try to materialize it by:
-      1) `dvc pull` the raw dataset target (from the project's configured DVC remote)
-      2) run preprocessing to generate `data/processed/train.csv`
-
-    This keeps local/dev behavior unchanged while enabling Cloud Run to use the shared DVC remote.
-    """
     if reference_csv.exists():
         return reference_csv
 
-    # DVC must be available in the runtime environment.
     if shutil.which("dvc") is None:
         raise FileNotFoundError(
             f"Reference CSV not found: {reference_csv} (and 'dvc' is not installed in the runtime)."
         )
 
-    logger.info(f"Reference CSV missing: {reference_csv}. Attempting to pull raw data via DVC: {DVC_RAW_TARGET}")
-
-    # 1) Pull raw data via DVC (from configured remote)
+    _acquire_dvc_lock()
     try:
-        subprocess.run(
-            ["dvc", "pull", DVC_RAW_TARGET],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-    except Exception as e:
-        raise FileNotFoundError(
-            f"Reference CSV not found: {reference_csv}. Failed to pull raw data with DVC target '{DVC_RAW_TARGET}': {e}"
-        )
+        if reference_csv.exists():
+            return reference_csv
 
-    # 2) Run preprocessing to generate processed/train.csv
-    logger.info("Running preprocessing to generate processed reference CSV")
-    try:
-        subprocess.run(
-            ["python", "-m", "mlops_course_project.data", "run-preprocess"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-    except Exception as e:
-        raise FileNotFoundError(
-            f"Reference CSV not found: {reference_csv}. DVC pull succeeded but preprocessing failed: {e}"
-        )
+        repo_root = Path(__file__).resolve().parents[2]
+        dvc_yaml = repo_root / "dvc.yaml"
 
-    if not reference_csv.exists():
-        raise FileNotFoundError(f"Reference CSV not found: {reference_csv}")
+        preferred_target = str(reference_csv) + ".dvc"
+        preferred_file = repo_root / preferred_target
 
-    logger.info(f"Reference CSV is now available: {reference_csv}")
-    return reference_csv
+        logger.info(f"Reference CSV missing: {reference_csv}. Materializing via DVC...")
+
+        if preferred_file.exists():
+            logger.info(f"Found {preferred_file}. Running dvc repro for reference artifact.")
+            _dvc_repro(preferred_target)
+        elif dvc_yaml.exists():
+            logger.info("Found dvc.yaml. Running full pipeline with dvc repro --force.")
+            _dvc_repro(None)
+        else:
+            ref_sidecar = repo_root / (str(reference_csv) + ".dvc")
+            if ref_sidecar.exists():
+                logger.info(f"Found sidecar {ref_sidecar}. Pulling reference artifact.")
+                _dvc_pull(str(ref_sidecar.relative_to(repo_root)))
+            else:
+                logger.info(
+                    f"No DVC pipeline/sidecar for {reference_csv}. Pulling raw target and preprocessing: {DVC_RAW_TARGET}"
+                )
+                _dvc_pull(DVC_RAW_TARGET)
+                _preprocess()
+
+        if not reference_csv.exists():
+            raise FileNotFoundError(
+                f"Reference CSV not found after DVC materialization. Expected: {reference_csv}. "
+                "Check DVC remote configuration and preprocessing outputs."
+            )
+
+        logger.info(f"Reference CSV is now available: {reference_csv}")
+        return reference_csv
+    finally:
+        _release_dvc_lock()
 
 
 def standardize_current_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -276,6 +370,9 @@ def run_drift_report(
     reference_csv = Path(reference_csv)
     current_csv = Path(current_csv)
     out_html = Path(out_html)
+
+    if REFERENCE_CSV_DVC_PATH:
+        reference_csv = Path(REFERENCE_CSV_DVC_PATH)
 
     logger.info("Starting drift report generation")
     logger.debug(f"Reference CSV: {reference_csv}")

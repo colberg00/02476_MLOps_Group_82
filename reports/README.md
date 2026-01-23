@@ -134,7 +134,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
-s224345, 
+s224345, s225207
 
 ### Question 3
 > **Did you end up using any open-source frameworks/packages not covered in the course during your project? If so**
@@ -303,7 +303,9 @@ Our continuous integration setup includes automated unit testing using pytest an
 >
 > Answer:
 
---- question 12 fill here ---
+We didn't run a full set of experiments like hyperparameter sweeps with tracked results, but we used Hydra configuration files to let us change parameters without editing our source code and to keep track of the hyperparameter settings, the paths, and the results. We ran the training file with the following command:
+python -m src.mlops_course_project.train
+In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible.
 
 ### Question 13
 
@@ -318,7 +320,8 @@ Our continuous integration setup includes automated unit testing using pytest an
 >
 > Answer:
 
---- question 13 fill here ---
+We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment was:
+python -m src.mlops_course_project.train
 
 ### Question 14
 

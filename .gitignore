@@ -8,7 +8,7 @@ data/**
 # local model folder
 models/
 # report folder
-reports/
+reports/baseline_metrics.json
 
 # logs
 logs/

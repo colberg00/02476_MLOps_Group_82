@@ -189,6 +189,9 @@ To obtain an exact copy of the development environment, a new team member would 
 --- question 5 fill here ---
 we have added:
 
+
+### Question 6
+
 > **Did you implement any rules for code quality and format? What about typing and documentation? Additionally,**
 > **explain with your own words why these concepts matters in larger projects.**
 >
@@ -200,7 +203,7 @@ we have added:
 >
 > Answer:
 
-We used Ruff for both linting and formatting, as well as pre-commit hooks (everything is found in `lint.yaml`) to run Ruff automatically before each commit, ensuring consistent code quality. For typing, we use type hints throughout the codebase and included **mypy** for static type checking. Documentation follows Google-style docstrings.
+We used Ruff for both linting and formatting, as well as pre-commit hooks (everything is found in `lint.yaml`) to run Ruff automatically before each commit, ensuring consistent code quality. For typing, we use type hints throughout the codebase and included `mypy` for static type checking. Documentation follows Google-style docstrings.
 
 These concepts are importatnt in larger projects because they eliminate friction or miscommunication between multiple developers working on the same project. Linting and formatting catches issues like unused imports, inconsistent style before they hit code review. Typing helps catch bugs early; if a function expects a Tensor but receives a list, mypy flags it before runtime. Good documentation saves time when revisiting code at a later time or when new contributors join the project/look at implementations.
 
@@ -293,7 +296,7 @@ Both workflows use caching through `astral-sh/setup-uv`. This significantly s
 
 We test on three operating systems (Ubuntu, macOS, and Windows) using a matrix strategy, all with Python 3.12. This gives us confidence that our code works across different environments. The `fail-fast: false` setting ensures all combinations run even if one fails, giving us complete test results. Test artifacts are also uploaded for debugging failed runs.
 
-An example of a triggered workflow can be seen in the following figure. Upon a pull request, 3 the automated unit tests were run using Ubuntu, Windows and macOS, all passing within 90 seconds.
+An example of a triggered workflow can be seen by following this link [workflow](https://github.com/colberg00/02476_MLOps_Group_82/actions/runs/21287880452). Upon a pull request, 3 the automated unit tests were run using Ubuntu, Windows and macOS, all passing within 90 seconds.
 
 ## Running code and tracking experiments
 
@@ -344,7 +347,17 @@ An example of a triggered workflow can be seen in the following figure. Upon a p
 >
 > Answer:
 
---- question 14 fill here ---
+`![conf_matrix](figures/Metrics.png)`
+
+`![metrics](figures/conf_matrix.png)`
+
+
+Logging of experiments was not done in very much depth as the hyperparameters of our model did not change considerably during the project. However, for the purposes of trying it out, a simple experiment tracking setup was implemented using W&B to compare different hyperparameter configurations. As shown in the screenshot, we tracked test accuracy, precision, recall, and F1-score, as well as confusion matrices for each experiment run. These metrics provide complementary views of model performance. Accuracy gives an overall measure of correctness, while precision and recall help identify whether the model is making too many false positives or false negatives. The F1-score combines precision and recall into a single metric, making it useful for balanced evaluation.
+
+Each bar corresponds to a different experiment with varying hyperparameters such as regularization strength C, vocabulary size (max_features), and n-gram range. Logging these metrics makes it easy to compare how different configurations affect performance and to identify trade-offs between precision and recall.
+
+Although the experiment logging was not very detailed, it was sufficient to support basic model comparison and performance analysis across runs.
+
 
 ### Question 15
 
@@ -366,9 +379,6 @@ The Docker image is built locally using a custom Dockerfile located in the repos
 `docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py download`
 
 `docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py run-preprocess`
-
-
-
 
 
 This setup ensures that experiments can be reliably reproduced and simplifies collaboration by providing a standardized execution environment. The link to the Dockerfile used for training: https://github.com/colberg00/02476_MLOps_Group_82/blob/845f0deba3701322f50f33d563fcf6bbfa5cda4d/dockerfiles/train.dockerfile

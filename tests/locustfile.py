@@ -31,4 +31,5 @@ class NewsClassifierUser(HttpUser):
             "business market report",
         ]
         import random
+
         self.client.post("/predict", json={"slug": random.choice(slugs)})

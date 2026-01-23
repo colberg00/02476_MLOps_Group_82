@@ -92,9 +92,7 @@ def _resolve_model_path(model_path: Path) -> Path:
             pass
         except Exception as e:
             # Any other cloud error should be surfaced (auth/permission/network).
-            raise RuntimeError(
-                f"Failed to download model from gs://{MODEL_GCS_BUCKET}/{MODEL_GCS_OBJECT}: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to download model from gs://{MODEL_GCS_BUCKET}/{MODEL_GCS_OBJECT}: {e}") from e
 
     # Fall back to local model.
     if model_path.exists():

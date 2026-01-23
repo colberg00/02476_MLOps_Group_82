@@ -9,12 +9,10 @@ RUN uv sync --frozen --no-install-project
 RUN python -m pip install --no-cache-dir "dvc[gcs]"
 
 COPY src src/
-# Include DVC metadata (small files) so the service can `dvc pull` in Cloud Run
-COPY .dvc .dvc
-COPY data data
+COPY models models/
 COPY README.md README.md
 COPY LICENSE LICENSE
 
 RUN uv sync --frozen
 
-ENTRYPOINT ["uv", "run", "uvicorn", "src.mlops_course_project.api:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["uv", "run", "uvicorn", "src.mlops_course_project.api:app", "--host", "0.0.0.0", "--port", "8080"]

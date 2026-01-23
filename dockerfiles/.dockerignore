@@ -6,3 +6,6 @@ models/
 reports/
 .git/
 .DS_Store
+
+!models/
+!models/baseline.joblib

@@ -623,6 +623,10 @@ The starting point of the diagram is our local development environment, where we
 
 When we are ready to integrate changes, the developer uses pre-commit hooks before committing and pushing to GitHub. A push and/or pull request then triggers GitHub Actions (CI), where we run code quality and correctness checks: ruff (lint/format), mypy (type checking), and pytest unit tests (covering data/model/train/API components) with a coverage report. This setup helps ensure new changes do not break core functionality before they are merged.
 
+For cloud deployment, we kept it simple: when we push to main, Cloud Build is triggered. Cloud Build then builds our Docker image and pushes it to Artifact Registry. From there, Cloud Run pulls the newest image and serves our FastAPI inference service as an HTTP endpoint. The trained model is bundles directly inside the Docker image. Cloud Logging then automatically collects logs from Cloud Run. 
+
+In addition, we have a few optional, developer-only outputs that are not part of the user inference flow. We can generate profiling reports by running cProfile on our main scripts and visualizing the results with SnakeViz, so we can see where runtime is spent. We also implemented data drift monitoring with Evidently, which we run manually to evaluate how robust the system is under distribution shifts. During development we also used GCS + DVC for experimental data versioning and Compute Engine for ad-hoc experimentation/setup, but these are not part of the final inference runtime on Cloud Run.
+
 ### Question 30
 
 > **Discuss the overall struggles of the project. Where did you spend most time and what did you do to overcome these**

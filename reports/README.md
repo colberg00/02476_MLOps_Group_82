@@ -134,7 +134,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
-s224345, 
+s224345,
 
 ### Question 3
 > **Did you end up using any open-source frameworks/packages not covered in the course during your project? If so**
@@ -354,7 +354,7 @@ Docker was used to containerize our machine learning training pipeline to ensure
 
 The Docker image is built locally using a custom Dockerfile located in the repository, and verified by running preprocessing and training commands inside the container while mounting local directories for data and output artifacts. For example, the training image can be executed using a command such as docker run `--rm -v data:/app/data -v models:/app/models mlops82-train:latest`, which runs the training script inside the container and stores outputs on the host machine.
 
-This setup ensures that experiments can be reliably reproduced and simplifies collaboration by providing a standardized execution environment. The link to the Dockerfile used for training: https://github.com/colberg00/02476_MLOps_Group_82/blob/845f0deba3701322f50f33d563fcf6bbfa5cda4d/dockerfiles/train.dockerfile 
+This setup ensures that experiments can be reliably reproduced and simplifies collaboration by providing a standardized execution environment. The link to the Dockerfile used for training: https://github.com/colberg00/02476_MLOps_Group_82/blob/845f0deba3701322f50f33d563fcf6bbfa5cda4d/dockerfiles/train.dockerfile
 
 ### Question 16
 

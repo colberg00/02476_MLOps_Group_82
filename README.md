@@ -3,7 +3,7 @@
 
 README file for Group 82.
 
-1. The dataset we will work with is: Jia555/cis519_news_urls. The short hash for the data we will use is: "6dca88d". 
+1. The dataset we will work with is: Jia555/cis519_news_urls. The short hash for the data we will use is: "6dca88d".
 
 2. The model we would like to work with is microsoft/deberta-v3-base. We will fine tune it for our classification task.
 

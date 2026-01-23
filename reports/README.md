@@ -347,9 +347,9 @@ An example of a triggered workflow can be seen by following this link [workflow]
 >
 > Answer:
 
-`![conf_matrix](figures/Metrics.png)`
+![conf_matrix](reports/figures/Metrics.png)
 
-`![metrics](figures/conf_matrix.png)`
+![metrics](reports/figures/conf_matrix.png)
 
 
 Logging of experiments was not done in very much depth as the hyperparameters of our model did not change considerably during the project. However, for the purposes of trying it out, a simple experiment tracking setup was implemented using W&B to compare different hyperparameter configurations. As shown in the screenshot, we tracked test accuracy, precision, recall, and F1-score, as well as confusion matrices for each experiment run. These metrics provide complementary views of model performance. Accuracy gives an overall measure of correctness, while precision and recall help identify whether the model is making too many false positives or false negatives. The F1-score combines precision and recall into a single metric, making it useful for balanced evaluation.

@@ -10,11 +10,8 @@ RUN python -m pip install --no-cache-dir "dvc[gcs]"
 
 COPY src src/
 # Include DVC metadata (small files) so the service can `dvc pull` in Cloud Run
-COPY dvc.yaml dvc.yaml
-COPY dvc.lock dvc.lock
 COPY .dvc .dvc
-COPY data/*.dvc data/
-COPY data/raw/*.dvc data/raw/
+COPY data data
 COPY README.md README.md
 COPY LICENSE LICENSE
 

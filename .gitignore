@@ -194,3 +194,11 @@ cython_debug/
 
 # Local/generated data (do not commit)
 src/data/
+
+# Local artifacts
+prediction_database.csv
+prediction_events/
+reports/*.html
+reports/*.prof
+src/mlops_course_project/data/
+src/mlops_course_project/reports/

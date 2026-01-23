@@ -30,7 +30,7 @@
 - [X] Code coverage (M16) --- Kelvin
 - [X] CI on GitHub (M17) --- Christian
 - [X] CI caching + multi-os/python/torch testing (M17) --- Christian
-- [X] Add linting step in CI (M17) --- Christian
+- [ ] Add linting step in CI (M17) --- Christian
 - [X] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)
@@ -45,7 +45,7 @@
 - [ ] Frontend for API (M26) --- Nice to have
 
 ## Week 3
-- [ ] Robustness to data drift (M27) --- Oskar
+- [x] Robustness to data drift (M27) --- Oskar
 - [ ] Collect input-output data from deployed app (M27) --- Jacob
 - [ ] Deploy drift detection API (M27) --- Oskar
 - [ ] Add system metrics to API (M28) --- Oskar

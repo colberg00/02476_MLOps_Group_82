@@ -1,27 +1,31 @@
 """FastAPI application for news outlet classification."""
 
+import csv
+import json
 import os
 import time
-import json
 import uuid
-from pathlib import Path
-import csv
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from joblib import load
+from loguru import logger
 from pydantic import BaseModel
 
+from mlops_course_project import setup_logging
 from mlops_course_project.data import _url_to_slug_text
+
+setup_logging("api")
 
 
 LABEL_MAP = {0: "nbc", 1: "fox"}
 DEFAULT_MODEL_PATH = Path(
     os.getenv(
         "MODEL_PATH",
-        str(Path(__file__).resolve().parent / "models" / "baseline.joblib"),
+        str(Path(__file__).resolve().parent.parent.parent / "models" / "baseline.joblib"),
     )
 )
 
@@ -38,6 +42,65 @@ LOGGING_BACKEND = "gcs" if PREDICTION_GCS_BUCKET else "local_csv"
 
 # Always write one JSON event per request (cloud-safe pattern). Locally, events are written to this directory.
 PREDICTION_EVENTS_DIR = Path(os.getenv("PREDICTION_EVENTS_DIR", "prediction_events"))
+
+# --- Optional model loading from GCS (Cloud Run-friendly) ---
+# Cloud-first behavior:
+# - If a model exists in GCS, use that.
+# - If it does not exist in GCS (NotFound), fall back to the local model.
+# - If neither exists, raise the same "Train it first" error.
+#
+# Backwards compatible:
+# - If no bucket is configured, the service behaves exactly like local dev/tests.
+MODEL_GCS_BUCKET = (os.getenv("MODEL_GCS_BUCKET", "").strip() or PREDICTION_GCS_BUCKET).strip()
+MODEL_GCS_OBJECT = os.getenv("MODEL_GCS_OBJECT", "models/baseline.joblib").strip() or "models/baseline.joblib"
+MODEL_TMP_PATH = Path(os.getenv("MODEL_TMP_PATH", "/tmp/baseline.joblib"))
+
+
+def _resolve_model_path(model_path: Path) -> Path:
+    """Return a local filesystem path to a loadable model.
+
+    Cloud-first:
+    - If MODEL_GCS_BUCKET is set, attempt to download gs://{bucket}/{object} to MODEL_TMP_PATH.
+      If the object is missing (NotFound), fall back to `model_path`.
+    - If MODEL_GCS_BUCKET is not set, use `model_path`.
+    """
+
+    # Try cloud model first if configured.
+    if MODEL_GCS_BUCKET:
+        # Lazy import so local dev works without cloud deps unless this path is used.
+        try:
+            from google.cloud import storage  # type: ignore
+            from google.api_core.exceptions import NotFound  # type: ignore
+        except Exception as e:
+            raise RuntimeError(
+                "google-cloud-storage is required to download the model from GCS. "
+                "Install it (e.g., `uv add google-cloud-storage`)."
+            ) from e
+
+        MODEL_TMP_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+        client = storage.Client()
+        bucket = client.bucket(MODEL_GCS_BUCKET)
+        blob = bucket.blob(MODEL_GCS_OBJECT)
+
+        try:
+            blob.download_to_filename(str(MODEL_TMP_PATH))
+            if MODEL_TMP_PATH.exists():
+                return MODEL_TMP_PATH
+        except NotFound:
+            # Cloud object doesn't exist -> fall back to local.
+            pass
+        except Exception as e:
+            # Any other cloud error should be surfaced (auth/permission/network).
+            raise RuntimeError(
+                f"Failed to download model from gs://{MODEL_GCS_BUCKET}/{MODEL_GCS_OBJECT}: {e}"
+            ) from e
+
+    # Fall back to local model.
+    if model_path.exists():
+        return model_path
+
+    raise FileNotFoundError(f"Model not found: {model_path}. Train it first.")
 
 
 # --- Monitoring (drift + data quality reports) ---
@@ -133,12 +196,24 @@ _model = None
 
 
 def get_model(model_path: Path = DEFAULT_MODEL_PATH):
-    """Load and cache the model."""
+    """
+    Load and cache the model.
+
+    Cloud-first:
+    - If a model exists in GCS (MODEL_GCS_BUCKET / MODEL_GCS_OBJECT), download and use it.
+    - If the GCS object is missing, fall back to `model_path`.
+
+    Backwards compatible:
+    - If no bucket is configured, load from `model_path` like local dev/tests.
+    """
     global _model
     if _model is None:
+        logger.debug(f"Loading model from {model_path}")
         if not model_path.exists():
+            logger.error(f"Model not found: {model_path}")
             raise FileNotFoundError(f"Model not found: {model_path}. Train it first.")
         _model = load(model_path)
+        logger.info(f"Model loaded successfully from {model_path}")
     return _model
 
 
@@ -161,6 +236,7 @@ class PredictionResponse(BaseModel):
 @app.get("/")
 def root():
     """Root endpoint with API information."""
+    logger.debug("Root endpoint accessed")
     return {"message": "News Outlet Classifier API", "version": "0.0.1"}
 
 
@@ -175,7 +251,7 @@ def _should_regenerate_report(path: Path, refresh_seconds: int) -> bool:
 @app.get("/health")
 def health():
     """Health check endpoint."""
-    # Keep the health endpoint deliberately minimal so tests and simple checks only depend on status.
+    logger.debug("Health check accessed")
     return {"status": "healthy"}
 
 
@@ -186,25 +262,30 @@ def monitoring_report(force: bool = False):
     - Uses cached report if it is fresh enough (MONITORING_REFRESH_SECONDS)
     - Set `force=true` to regenerate immediately
     """
+    logger.info(f"Monitoring report requested (force={force})")
     try:
-        # Import lazily so normal prediction requests don't pay Evidently import time.
         from mlops_course_project.data_drift import run_drift_report
 
         MONITORING_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
         if force or _should_regenerate_report(MONITORING_REPORT_PATH, MONITORING_REFRESH_SECONDS):
+            logger.info("Regenerating drift report")
             run_drift_report(
                 reference_csv=MONITORING_REFERENCE_CSV,
                 current_csv=MONITORING_CURRENT_CSV_FALLBACK,
                 out_html=MONITORING_REPORT_PATH,
             )
+            logger.debug(f"Drift report saved to {MONITORING_REPORT_PATH}")
+        else:
+            logger.debug("Using cached drift report")
 
         html = MONITORING_REPORT_PATH.read_text(encoding="utf-8")
         return HTMLResponse(content=html, status_code=200)
     except FileNotFoundError as e:
-        # Typically reference CSV missing in the container or no current data yet
+        logger.warning(f"Monitoring report data not found: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        logger.error(f"Failed to generate monitoring report: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate monitoring report: {e}")
 
 
@@ -215,25 +296,30 @@ def monitoring_quality(force: bool = False):
     - Uses cached report if it is fresh enough (MONITORING_REFRESH_SECONDS)
     - Set `force=true` to regenerate immediately
     """
+    logger.info(f"Data quality report requested (force={force})")
     try:
-        # Import lazily so normal prediction requests don't pay Evidently import time.
         from mlops_course_project.data_drift import run_drift_report
 
         MONITORING_QUALITY_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-        # `run_drift_report` generates BOTH drift + quality reports.
         if force or _should_regenerate_report(MONITORING_QUALITY_REPORT_PATH, MONITORING_REFRESH_SECONDS):
+            logger.info("Regenerating data quality report")
             run_drift_report(
                 reference_csv=MONITORING_REFERENCE_CSV,
                 current_csv=MONITORING_CURRENT_CSV_FALLBACK,
                 out_html=MONITORING_REPORT_PATH,
             )
+            logger.debug(f"Quality report saved to {MONITORING_QUALITY_REPORT_PATH}")
+        else:
+            logger.debug("Using cached quality report")
 
         html = MONITORING_QUALITY_REPORT_PATH.read_text(encoding="utf-8")
         return HTMLResponse(content=html, status_code=200)
     except FileNotFoundError as e:
+        logger.warning(f"Quality report data not found: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        logger.error(f"Failed to generate data quality report: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate data quality report: {e}")
 
 
@@ -247,13 +333,17 @@ def predict(request: PredictionRequest, background_tasks: BackgroundTasks) -> Pr
     Returns:
         Prediction response with outlet classification and probabilities.
     """
+    logger.debug(f"Prediction request received: slug={request.slug}, url={request.url}")
+
     if not request.slug and not request.url:
+        logger.warning("Prediction request missing both slug and url")
         raise HTTPException(status_code=400, detail="Provide either 'slug' or 'url'.")
 
     slug = request.slug
     if request.url:
         slug = _url_to_slug_text(request.url)
         if not slug:
+            logger.warning(f"Could not extract slug from URL: {request.url}")
             raise HTTPException(
                 status_code=400,
                 detail="Could not extract a valid slug from URL (it may be a section page or too short).",
@@ -262,6 +352,7 @@ def predict(request: PredictionRequest, background_tasks: BackgroundTasks) -> Pr
     try:
         model = get_model()
     except FileNotFoundError as e:
+        logger.error(f"Model not available: {e}")
         raise HTTPException(status_code=503, detail=str(e))
 
     pred = int(model.predict([slug])[0])
@@ -278,7 +369,8 @@ def predict(request: PredictionRequest, background_tasks: BackgroundTasks) -> Pr
         response.proba_nbc = proba_nbc
         response.proba_fox = proba_fox
 
-    # Log request + prediction after response is returned
+    logger.info(f"Prediction: {outlet} (proba_nbc={proba_nbc:.4f}, proba_fox={proba_fox:.4f})")
+
     row = {
         "time": datetime.now(timezone.utc).isoformat(),
         "slug": slug,

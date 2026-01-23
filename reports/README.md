@@ -134,7 +134,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
-s224345,
+s224345,s224343
 
 ### Question 3
 > **Did you end up using any open-source frameworks/packages not covered in the course during your project? If so**
@@ -189,6 +189,9 @@ To obtain an exact copy of the development environment, a new team member would 
 --- question 5 fill here ---
 we have added:
 
+
+### Question 6
+
 > **Did you implement any rules for code quality and format? What about typing and documentation? Additionally,**
 > **explain with your own words why these concepts matters in larger projects.**
 >
@@ -200,7 +203,9 @@ we have added:
 >
 > Answer:
 
---- question 6 fill here ---
+We used Ruff for both linting and formatting, as well as pre-commit hooks (everything is found in `lint.yaml`) to run Ruff automatically before each commit, ensuring consistent code quality. For typing, we use type hints throughout the codebase and included `mypy` for static type checking. Documentation follows Google-style docstrings.
+
+These concepts are importatnt in larger projects because they eliminate friction or miscommunication between multiple developers working on the same project. Linting and formatting catches issues like unused imports, inconsistent style before they hit code review. Typing helps catch bugs early; if a function expects a Tensor but receives a list, mypy flags it before runtime. Good documentation saves time when revisiting code at a later time or when new contributors join the project/look at implementations.
 
 ## Version control
 
@@ -251,7 +256,7 @@ Even if our code coverage were close to 100%, we would not consider the system t
 >
 > Answer:
 
---- question 9 fill here ---
+Yes, we used both branches and pull requests throughout the project. Our workflow was set up so that each team member worked on feature branches rather than committing directly to main. When a feature was ready, we opened a pull request to merge it into main. This approach helps in several ways: it keeps main stable since broken code never gets merged directly, it enables code review where teammates can catch issues the author missed, and it provides a clear history of what changes were made and why. For a team of multiple contributors, this prevented the chaos of conflicting changes and kept our codebase consistent.
 
 ### Question 10
 
@@ -283,7 +288,15 @@ Even if our code coverage were close to 100%, we would not consider the system t
 >
 > Answer:
 
-Our continuous integration setup includes automated unit testing using pytest and coverage, which is run on each push and pull request. The tests focus on the most critical components of the system, particularly the data preprocessing pipeline, model construction, and training utilities. This ensures that core functionality remains stable and that regressions are detected early, while keeping CI runtime short and suitable for frequent execution.
+Our continous integration setup is organized into two separate workflow files, one for linting (`lint.yaml`) and one for testing (`tests.yaml`). Both run on every push and pull request to main. The linting workflow runs all our pre-commit hooks, Ruff linting to catch code issues, Ruff format checking to ensure consistent style.
+
+The testing workflow runs automated unit tests using pytest with coverage reporting. Tests focus on the most critical components: the data preprocessing pipeline, model construction, and training utilities. This ensures that core functionality remains stable and that regressions are detected early, while keeping CI runtime short and suitable for frequent execution.
+
+Both workflows use caching through `astral-sh/setup-uv`. This significantly speeds up CI execution since we don't reinstall everything from scratch each time.
+
+We test on three operating systems (Ubuntu, macOS, and Windows) using a matrix strategy, all with Python 3.12. This gives us confidence that our code works across different environments. The `fail-fast: false` setting ensures all combinations run even if one fails, giving us complete test results. Test artifacts are also uploaded for debugging failed runs.
+
+An example of a triggered workflow can be seen by following this link [workflow](https://github.com/colberg00/02476_MLOps_Group_82/actions/runs/21287880452). Upon a pull request, 3 the automated unit tests were run using Ubuntu, Windows and macOS, all passing within 90 seconds.
 
 ## Running code and tracking experiments
 
@@ -302,7 +315,9 @@ Our continuous integration setup includes automated unit testing using pytest an
 >
 > Answer:
 
---- question 12 fill here ---
+We didn't run a full set of experiments like hyperparameter sweeps with tracked results, but we used Hydra configuration files to let us change parameters without editing our source code and to keep track of the hyperparameter settings, the paths, and the results. We ran the training file with the following command:
+python -m src.mlops_course_project.train
+In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible.
 
 ### Question 13
 
@@ -317,7 +332,8 @@ Our continuous integration setup includes automated unit testing using pytest an
 >
 > Answer:
 
---- question 13 fill here ---
+We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment was:
+python -m src.mlops_course_project.train
 
 ### Question 14
 
@@ -334,7 +350,17 @@ Our continuous integration setup includes automated unit testing using pytest an
 >
 > Answer:
 
---- question 14 fill here ---
+![metrics](figures/Metrics.png)
+
+![conf_matrix](figures/conf_matrix.png)
+
+
+Logging of experiments was not done in very much depth as the hyperparameters of our model did not change considerably during the project. However, for the purposes of trying it out, a simple experiment tracking setup was implemented using W&B to compare different hyperparameter configurations. As shown in the screenshot, we tracked test accuracy, precision, recall, and F1-score, as well as confusion matrices for each experiment run. These metrics provide complementary views of model performance. Accuracy gives an overall measure of correctness, while precision and recall help identify whether the model is making too many false positives or false negatives. The F1-score combines precision and recall into a single metric, making it useful for balanced evaluation.
+
+Each bar corresponds to a different experiment with varying hyperparameters such as regularization strength C, vocabulary size (max_features), and n-gram range. Logging these metrics makes it easy to compare how different configurations affect performance and to identify trade-offs between precision and recall.
+
+Although the experiment logging was not very detailed, it was sufficient to support basic model comparison and performance analysis across runs.
+
 
 ### Question 15
 
@@ -356,9 +382,6 @@ The Docker image is built locally using a custom Dockerfile located in the repos
 `docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py download`
 
 `docker run --rm -v "%cd%\data:/app/data" mlops82-train:latest uv run python src/mlops_course_project/data.py run-preprocess`
-
-
-
 
 
 This setup ensures that experiments can be reliably reproduced and simplifies collaboration by providing a standardized execution environment. The link to the Dockerfile used for training: https://github.com/colberg00/02476_MLOps_Group_82/blob/845f0deba3701322f50f33d563fcf6bbfa5cda4d/dockerfiles/train.dockerfile
@@ -467,7 +490,13 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 23 fill here ---
+We wrote an API for our model, using FastAPI.  The implementation can be seen in `api.py`and provides three endpoints. A GET /, which returns basic API information and version. A GET /health, which acts as a health check endpoint, returns service status and a POST /predict, which accepts either a URL slug or full URL and returns the predicted probabilities.
+
+The API loads a trained scikit-learn model (saved as a `.joblib` file) on first request and caches it for subsequent calls.
+
+We used Pydantic models (`PredictionRequest` and `PredictionResponse`) for input validation and response structure. The response includes the predicted outlet label, and if the model supports it, also returns probability scores for each class (`proba_nbc` and `proba_fox`).
+
+The model path is configurable via the `MODEL_PATH` environment variable, defaulting to baseline.joblib. Error handling covers cases like missing models (503) and invalid input (400).
 
 ### Question 24
 
@@ -483,7 +512,20 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 24 fill here ---
+We deployed our API locally using **FastAPI** and **Uvicorn**. To run the API locally, we used:
+
+*`uv run uvicorn mlops_course_project.api:app --reload`*
+
+This starts a local development server with hot-reloading enabled, so changes to the code are reflected immediately without restarting. The API is then accessible at `http://127.0.0.1:8000`.
+
+FastAPI automatically generates interactive documentation at `http://127.0.0.1:8000/docs`, which provides a Swagger UI where you can test all endpoints directly in the browser. This was useful during development for quickly testing the `/predict` endpoint without writing curl commands.
+
+To invoke the prediction endpoint, a user can either use the Swagger UI or call:
+*`curl -X POST "http://127.0.0.1:8000/predict" \`*
+  *`-H "Content-Type: application/json" \`*
+  *`-d '{"url": "https://www.nbcnews.com/politics/some-article-slug"}`*
+
+The response includes the predicted news outlet (`nbc` or `fox`) along with probability scores for each class.
 
 ### Question 25
 
@@ -498,7 +540,19 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 25 fill here ---
+For unit testing, we used pytest to test our API endpoints. The tests are located in `tests/test_api.py` and use FastAPI's built-in TestClient to simulate HTTP requests without starting a real server. We test the core endpoints: the root endpoint (/), health check (`/health`), and the prediction endpoint (`/predict`). The tests verify that endpoints return correct status codes and response structures.
+
+For load testing, we used Locust. Our test file (`locustfile.py`) simulates users hitting the API with weighted tasks: the `/predict` endpoint gets 7x more traffic than `/health` and `/` (reflecting real usage patterns). Users wait 1-3 seconds between requests. Here is an example of this testing, with 200 users and 20 users per second.
+
+| Type | Name        | # reqs | # fails       | Avg | Min | Max | Med | req/s | failures/s |
+|------|-------------|--------|---------------|-----|-----|-----|-----|-------|------------|
+| GET  | /           | 655    | 0 (0.00%)     | 3   | 0   | 28  | 2   | 10.22 | 0.00       |
+| GET  | /health     | 699    | 0 (0.00%)     | 3   | 0   | 39  | 2   | 10.91 | 0.00       |
+| POST | /predict    | 4652   | 0 (0.00%)     | 5   | 1   | 55  | 4   | 72.61 | 0.00       |
+|      | **Aggregated** | 6006   | 0 (0.00%)     | 4   | 0   | 55  | 4   | 93.75 | 0.00       |
+
+The results show our API handled ~94 requests/second with 0% failure rate. The `/predict` endpoint averaged 5ms response time, with the slowest request at 55ms, solid performance for a classification service. This also reflects the simplicity of the classifier.
+
 
 ### Question 26
 

@@ -317,7 +317,7 @@ An example of a triggered workflow can be seen by following this link [workflow]
 
 We didn't run a full set of experiments like hyperparameter sweeps with tracked results, but we used Hydra configuration files to let us change parameters without editing our source code and to keep track of the hyperparameter settings, the paths, and the results. We ran the training file with the following command:
 python -m src.mlops_course_project.train
-In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible.
+In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible. Our training experience is mostly based off training locally, rather than doing it in the cloud.
 
 ### Question 13
 
@@ -332,7 +332,7 @@ In the script it was defined that we should run with the defined configuration f
 >
 > Answer:
 
-We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment was:
+We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment locally was:
 python -m src.mlops_course_project.train
 
 ### Question 14
@@ -399,7 +399,7 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 16 fill here ---
+We profiled our code. Naturally, we do not consider it "perfect". We added profiling to main scripts train.py, model.py, and data_drift.py, so we could see where runtime was spent and whether any obvious bottlenecks existed. The way we did it was by generating cProfile output files in a SnakeViz compatible formate and inspected them to get a visual overview of the slowest parts of the pipeline. If we had gotten to the optimization part of our project with everything implemented correctly, this would be something that we would follow up on.
 
 ## Working in the cloud
 

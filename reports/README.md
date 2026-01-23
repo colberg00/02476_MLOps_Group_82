@@ -420,7 +420,15 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 17 fill here ---
+We made use of several GCP services during the project. Cloud Build was used with a build trigger connected to our GitHub repository, such that Docker images were automatically built when changes were pushed to the main branch. The build history can be inspected in GCP and shows multiple successful builds.
+
+The resulting Docker images were stored in Artifact Registry, where different image versions were maintained and later used for deployment.
+
+We deployed our FastAPI inference API using Cloud Run, which allowed us to run the containerized application in a serverless environment. The service was actively deployed and used for testing the prediction endpoint.
+
+Cloud Storage (GCS) was used in a limited capacity as a remote backend for DVC during experimentation, primarily to demonstrate data versioning and reproducibility. It was not part of the final inference pipeline.
+
+Finally, Cloud Logging was used to inspect logs from Cloud Run services and Cloud Build jobs during debugging.
 
 ### Question 18
 
@@ -435,7 +443,11 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 18 fill here ---
+-We made limited use of Compute Engine during the project. A virtual machine was created primarily for exploratory purposes, following the course guidelines, in order to test whether our training pipeline could be executed in a cloud-based environment rather than locally. The VM was accessed via SSH and used to manually run parts of the code.
+
+The instance type used was an e2-medium, with the remaining settings kept at their default configuration. The virtual machine was only active for a short period of time, resulting in very low overall cost.
+
+We did not set up a fully automated or reproducible cloud training pipeline using Compute Engine, and the VM was not integrated into the final project architecture. Instead, Compute Engine served as a learning and experimentation tool, while the main workflow relied on local training and cloud services for container builds and deployment.
 
 ### Question 19
 
@@ -444,7 +456,7 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 19 fill here ---
+![dvc_bucket](figures/q19_bucket.png)
 
 ### Question 20
 
@@ -453,7 +465,8 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 20 fill here ---
+![artifact_registry_overview](figures/q20_artifreg.png)
+![artifact_registry_images](figures/q20_artifreg2.png)
 
 ### Question 21
 
@@ -462,7 +475,7 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 21 fill here ---
+![cloud_build_history](figures/q21_build_history.png)
 
 ### Question 22
 

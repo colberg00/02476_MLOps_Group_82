@@ -289,11 +289,11 @@ Our continous integration setup is organized into two separate workflow files, o
 
 The testing workflow runs automated unit tests using pytest with coverage reporting. Tests focus on the most critical components: the data preprocessing pipeline, model construction, and training utilities. This ensures that core functionality remains stable and that regressions are detected early, while keeping CI runtime short and suitable for frequent execution.
 
-Both workflows use caching through `astral-sh/setup-uv`. This significantly speeds up CI execution since we don't reinstall everything from scratch each time. 
+Both workflows use caching through `astral-sh/setup-uv`. This significantly speeds up CI execution since we don't reinstall everything from scratch each time.
 
 We test on three operating systems (Ubuntu, macOS, and Windows) using a matrix strategy, all with Python 3.12. This gives us confidence that our code works across different environments. The `fail-fast: false` setting ensures all combinations run even if one fails, giving us complete test results. Test artifacts are also uploaded for debugging failed runs.
 
-An example of a triggered workflow can be seen in the following figure. Upon a pull request, 3 the automated unit tests were run using Ubuntu, Windows and macOS, all passing within 90 seconds. 
+An example of a triggered workflow can be seen in the following figure. Upon a pull request, 3 the automated unit tests were run using Ubuntu, Windows and macOS, all passing within 90 seconds.
 
 ## Running code and tracking experiments
 
@@ -479,7 +479,7 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 
 We wrote an API for our model, using FastAPI.  The implementation can be seen in `api.py`and provides three endpoints. A GET /, which returns basic API information and version. A GET /health, which acts as a health check endpoint, returns service status and a POST /predict, which accepts either a URL slug or full URL and returns the predicted probabilities.
 
-The API loads a trained scikit-learn model (saved as a `.joblib` file) on first request and caches it for subsequent calls. 
+The API loads a trained scikit-learn model (saved as a `.joblib` file) on first request and caches it for subsequent calls.
 
 We used Pydantic models (`PredictionRequest` and `PredictionResponse`) for input validation and response structure. The response includes the predicted outlet label, and if the model supports it, also returns probability scores for each class (`proba_nbc` and `proba_fox`).
 
@@ -511,7 +511,7 @@ To invoke the prediction endpoint, a user can either use the Swagger UI or call:
 *`curl -X POST "http://127.0.0.1:8000/predict" \`*
   *`-H "Content-Type: application/json" \`*
   *`-d '{"url": "https://www.nbcnews.com/politics/some-article-slug"}`*
-  
+
 The response includes the predicted news outlet (`nbc` or `fox`) along with probability scores for each class.
 
 ### Question 25

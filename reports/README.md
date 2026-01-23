@@ -529,7 +529,7 @@ The response includes the predicted news outlet (`nbc` or `fox`) along with pr
 
 For unit testing, we used pytest to test our API endpoints. The tests are located in `tests/test_api.py` and use FastAPI's built-in TestClient to simulate HTTP requests without starting a real server. We test the core endpoints: the root endpoint (/), health check (`/health`), and the prediction endpoint (`/predict`). The tests verify that endpoints return correct status codes and response structures.
 
-For load testing, we used Locust. Our test file (`locustfile.py`) simulates users hitting the API with weighted tasks: the `/predict` endpoint gets 7x more traffic than `/health` and `/` (reflecting real usage patterns). Users wait 1-3 seconds between requests.
+For load testing, we used Locust. Our test file (`locustfile.py`) simulates users hitting the API with weighted tasks: the `/predict` endpoint gets 7x more traffic than `/health` and `/` (reflecting real usage patterns). Users wait 1-3 seconds between requests. Here is an example of this testing, with 200 users and 20 users per second.
 
 | Type | Name        | # reqs | # fails       | Avg | Min | Max | Med | req/s | failures/s |
 |------|-------------|--------|---------------|-----|-----|-----|-----|-------|------------|

@@ -270,7 +270,11 @@ We used both branches and pull requests throughout the project. Our workflow was
 >
 > Answer:
 
---- question 10 fill here ---
+Yes, we used DVC for managing data in the project, although in a limited and mainly exploratory manner. DVC was set up to track the dataset using .dvc metadata files, keeping large data files out of Git and enabling the use of a Google Cloud Storage (GCS) remote. This ensured that a specific version of the dataset could be associated with each Git commit.
+
+In reality the dataset remained static throughout most of the project, as the ML part of the project was intentionally kept simpler in order to focus on the broader MLOps components, fx containerization, deployment, and cloud infrastructure. Therefore DVC was not used extensively for iterative data updates or experiment comparison.
+
+Still, the setup showed how data version control can support reproducibility and collaboration in projects where data changes more frequently. If our project were extended to include continuous data collection or retraining on updated news headlines, DVC would play a more central role in managing and reproducing experiments across machines and environments.
 
 ### Question 11
 
@@ -415,7 +419,15 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 17 fill here ---
+We made use of several GCP services during the project. Cloud Build was used with a build trigger connected to our GitHub repository, such that Docker images were automatically built when changes were pushed to the main branch. The build history can be inspected in GCP and shows multiple successful builds.
+
+The resulting Docker images were stored in Artifact Registry, where different image versions were maintained and later used for deployment.
+
+We deployed our FastAPI inference API using Cloud Run, which allowed us to run the containerized application in a serverless environment. The service was actively deployed and used for testing the prediction endpoint.
+
+Cloud Storage (GCS) was used in a limited capacity as a remote backend for DVC during experimentation, primarily to demonstrate data versioning and reproducibility. It was not part of the final inference pipeline.
+
+Finally, Cloud Logging was used to inspect logs from Cloud Run services and Cloud Build jobs during debugging.
 
 ### Question 18
 
@@ -430,7 +442,11 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 18 fill here ---
+-We made limited use of Compute Engine during the project. A virtual machine was created primarily for exploratory purposes, following the course guidelines, in order to test whether our training pipeline could be executed in a cloud-based environment rather than locally. The VM was accessed via SSH and used to manually run parts of the code.
+
+The instance type used was an e2-medium, with the remaining settings kept at their default configuration. The virtual machine was only active for a short period of time, resulting in very low overall cost.
+
+We did not set up a fully automated or reproducible cloud training pipeline using Compute Engine, and the VM was not integrated into the final project architecture. Instead, Compute Engine served as a learning and experimentation tool, while the main workflow relied on local training and cloud services for container builds and deployment.
 
 ### Question 19
 
@@ -439,7 +455,7 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 19 fill here ---
+![dvc_bucket](figures/q19_bucket.png)
 
 ### Question 20
 
@@ -448,7 +464,8 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 20 fill here ---
+![artifact_registry_overview](figures/q20_artifreg.png)
+![artifact_registry_images](figures/q20_artifreg2.png)
 
 ### Question 21
 
@@ -457,7 +474,7 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 21 fill here ---
+![cloud_build_history](figures/q21_build_history.png)
 
 ### Question 22
 
@@ -472,7 +489,11 @@ We profiled our code. Naturally, we do not consider it "perfect". We added profi
 >
 > Answer:
 
---- question 22 fill here ---
+We did not fully train our model in the cloud using either Compute Engine or Vertex AI. While we explored the possibility of running training on Compute Engine as part of the course exercises, this was done in a limited and exploratory manner and was not integrated into a reproducible cloud-based training pipeline.
+
+In practice, model training was primarily performed locally. This decision was influenced by the small size of the dataset, the simplicity of the baseline model, and time constraints within the project. Setting up a fully automated cloud training workflow would have added additional complexity without providing significant benefits for this specific use case.
+
+Instead, cloud resources were mainly used for container builds and deployment of the inference API. This allowed us to focus on the MLOps aspects most relevant to the project, such as CI/CD, containerization, and deployment, while still gaining exposure to cloud-based experimentation.
 
 ## Deployment
 
@@ -561,7 +582,11 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 >
 > Answer:
 
---- question 26 fill here ---
+We did not implement monitoring of our deployed model during the project. Apart from basic logs available through Cloud Logging when running the FastAPI service on Cloud Run, no custom metrics or alerting were set up.
+
+For our specific use case, monitoring would be relevant to track request latency and error rates for the prediction endpoint, as well as changes in the distribution of incoming headline URLs over time. This could help identify issues such as failed requests, degraded performance, or shifts in the type of articles being classified that might affect model reliability.
+
+Since this was a course project with limited scope and a simple baseline model, monitoring was not prioritized, but it would be an important addition in a production setting.
 
 ## Overall discussion of project
 
@@ -580,7 +605,11 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 >
 > Answer:
 
---- question 27 fill here ---
+Overall, our cloud usage during the project was very limited. The total usage cost was approximately $0.56, which was fully covered by the $50 GCP education credits provided for the course, resulting in a net cost of $0.00. All usage was billed through a single shared GCP billing account.
+
+The majority of the cloud usage was driven by one group member who was responsible for setting up and experimenting with the cloud infrastructure. The main expense came from brief use of Compute Engine (around $0.44), where an e2-medium instance was used for exploratory purposes. Minor usage was also recorded for Cloud Run, VM Manager, and networking, while Cloud Build and Cloud Storage remained within the free tier. The dataset used in the project was small, with news_urls.csv being 4.4 MB, which further contributed to negligible storage and data transfer costs.
+
+Overall, the low cost reflects our usage pattern: model training was primarily done locally, while cloud resources were used selectively for experimentation, container builds, and deployment of a lightweight inference API.
 
 ### Question 28
 

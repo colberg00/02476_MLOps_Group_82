@@ -168,14 +168,8 @@ def _should_regenerate_report(path: Path, refresh_seconds: int) -> bool:
 @app.get("/health")
 def health():
     """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "logging_backend": LOGGING_BACKEND,
-        "gcs_bucket": PREDICTION_GCS_BUCKET or None,
-        "gcs_prefix": PREDICTION_GCS_PREFIX if PREDICTION_GCS_BUCKET else None,
-        "events_dir": str(PREDICTION_EVENTS_DIR) if not PREDICTION_GCS_BUCKET else None,
-        "local_csv_mirror": (not PREDICTION_GCS_BUCKET),
-    }
+    # Keep the health endpoint deliberately minimal so tests and simple checks only depend on status.
+    return {"status": "healthy"}
 
 
 @app.get("/monitoring/report", response_class=HTMLResponse)

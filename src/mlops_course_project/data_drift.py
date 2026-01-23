@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from evidently.legacy.metric_preset import DataQualityPreset, TargetDriftPreset, TextEvals
 from evidently.legacy.report import Report
+
 try:
     # Evidently versions differ in where ColumnMapping lives
     from evidently import ColumnMapping  # type: ignore
@@ -301,7 +302,6 @@ def run_drift_report(
             TestColumnRegExp(column_name="content", reg_exp=r"^[a-z0-9_\- ]+$"),
         ]
     )
-
 
     missing_suite.run(reference_data=ref, current_data=cur, column_mapping=column_mapping)
 

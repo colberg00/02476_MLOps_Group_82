@@ -316,7 +316,7 @@ An example of a triggered workflow can be seen by following this link [workflow]
 
 We didn't run a full set of experiments like hyperparameter sweeps with tracked results, but we used Hydra configuration files to let us change parameters without editing our source code and to keep track of the hyperparameter settings, the paths, and the results. We ran the training file with the following command:
 python -m src.mlops_course_project.train
-In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible.
+In the script it was defined that we should run with the defined configuration file. We could also run with overrides, but we never did this. We only made changes to the configuration file. Each run produces a new output folder (Hydra) with the effective config + artifacts, so runs are reproducible. Our training experience is mostly based off training locally, rather than doing it in the cloud.
 
 ### Question 13
 
@@ -331,7 +331,7 @@ In the script it was defined that we should run with the defined configuration f
 >
 > Answer:
 
-We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment was:
+We implemented @hydra.main(...) in our train.py file, which means each time we run training (i.e. commence an experiment), Hydra creates a new run folder. In this folder the full configuration for the run is saved. We also save the trained model (with joblib). Furthermore, a metric.json file is also saved, which contains the evaluation results. So, we save the hyperparameters, the model, and the results. To reprocude a run we can rerun train.py with the same configuration, which we save. We didn't run any meaningful experiments in the cloud, and thus didn't use DVC. The actual way to run an experiment locally was:
 python -m src.mlops_course_project.train
 
 ### Question 14
@@ -398,7 +398,7 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 >
 > Answer:
 
---- question 16 fill here ---
+We profiled our code. Naturally, we do not consider it "perfect". We added profiling to main scripts train.py, model.py, and data_drift.py, so we could see where runtime was spent and whether any obvious bottlenecks existed. The way we did it was by generating cProfile output files in a SnakeViz compatible formate and inspected them to get a visual overview of the slowest parts of the pipeline. If we had gotten to the optimization part of our project with everything implemented correctly, this would be something that we would follow up on.
 
 ## Working in the cloud
 
@@ -613,7 +613,13 @@ The results show our API handled ~94 requests/second with 0% failure rate. The `
 >
 > Answer:
 
---- question 29 fill here ---
+The starting point of the diagram is our local development environment, where we run the project scripts through a reproducible Python setup managed with uv. Locally, we use Hydra for configuration management, Typer for CLI entrypoints (e.g., running preprocessing/training), Loguru for structured logging, and pandas for data handling. During experimentation we download the dataset from Hugging Face Hub using the datasets library, train a baseline text classifier with scikit-learn, and serialize the trained model with joblib.
+
+When we are ready to integrate changes, the developer uses pre-commit hooks before committing and pushing to GitHub. A push and/or pull request then triggers GitHub Actions (CI), where we run code quality and correctness checks: ruff (lint/format), mypy (type checking), and pytest unit tests (covering data/model/train/API components) with a coverage report. This setup helps ensure new changes do not break core functionality before they are merged.
+
+For cloud deployment, we kept it simple: when we push to main, Cloud Build is triggered. Cloud Build then builds our Docker image and pushes it to Artifact Registry. From there, Cloud Run pulls the newest image and serves our FastAPI inference service as an HTTP endpoint. The trained model is bundles directly inside the Docker image. Cloud Logging then automatically collects logs from Cloud Run. 
+
+In addition, we have a few optional, developer-only outputs that are not part of the user inference flow. We can generate profiling reports by running cProfile on our main scripts and visualizing the results with SnakeViz, so we can see where runtime is spent. We also implemented data drift monitoring with Evidently, which we run manually to evaluate how robust the system is under distribution shifts. During development we also used GCS + DVC for experimental data versioning and Compute Engine for ad-hoc experimentation/setup, but these are not part of the final inference runtime on Cloud Run.
 
 ### Question 30
 

@@ -45,6 +45,7 @@ dev = [
     "mypy==1.19.1",
     "mkdocs-material==9.7.1",
     "mkdocstrings-python==2.0.1",
+    "locust>=2.43.1",
 ]
 
 

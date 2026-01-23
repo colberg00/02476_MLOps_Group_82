@@ -50,7 +50,7 @@ curriculum in this course. Therefore, we do not expect at all that you have chec
 The parenthesis at the end indicates what module the bullet point is related to. Please be honest in your answers, we
 will check the repositories and the code to verify your answers.
 
-### Week 1
+## Week 1
 
 * [X] Create a git repository (M5)
 * [X] Make sure that all team members have write access to the GitHub repository (M5)
@@ -107,7 +107,7 @@ will check the repositories and the code to verify your answers.
 * [ ] If applicable, optimize the performance of your training pipeline by using distributed training (M30)
 * [ ] Play around with quantization, compilation and pruning for you trained models to increase inference speed (M31)
 
-### Extra
+## Extra
 
 * [ ] Write some documentation for your application (M32)
 * [ ] Publish the documentation to GitHub Pages (M32)
@@ -625,7 +625,7 @@ Overall, the low cost reflects our usage pattern: model training was primarily d
 >
 > Answer:
 
---- question 28 fill here ---
+No extra implementations, not covered by the questions.
 
 ### Question 29
 

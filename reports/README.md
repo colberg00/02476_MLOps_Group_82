@@ -573,6 +573,8 @@ This setup ensures that experiments can be reliably reproduced and simplifies co
 > Answer:
 
 --- question 30 fill here ---
+(Kelvin draft suggestion): One challenge was that while we had tests to if our code worked when we pushed, it didnt ensure that the solution was compatible with other parts of the project. This means that sometimes one solution would make it much more difficult for another part of the project to be implemented. This has posed some problems, and the best solution to this problem is better communication between each group member.
+
 
 ### Question 31
 

@@ -39,6 +39,63 @@ LOGGING_BACKEND = "gcs" if PREDICTION_GCS_BUCKET else "local_csv"
 # Always write one JSON event per request (cloud-safe pattern). Locally, events are written to this directory.
 PREDICTION_EVENTS_DIR = Path(os.getenv("PREDICTION_EVENTS_DIR", "prediction_events"))
 
+# --- Optional model loading from GCS (Cloud Run-friendly) ---
+# If the model file is not present in the container filesystem, we can optionally download it
+# from GCS to a writable path (e.g., /tmp) before loading.
+#
+# Backwards compatible behavior:
+# - Local dev / tests: model is loaded from DEFAULT_MODEL_PATH as before.
+# - Cloud mode: if MODEL_GCS_BUCKET (or PREDICTION_GCS_BUCKET) is set and the local model is missing,
+#   download gs://{bucket}/{object} to MODEL_TMP_PATH and load from there.
+MODEL_GCS_BUCKET = (os.getenv("MODEL_GCS_BUCKET", "").strip() or PREDICTION_GCS_BUCKET).strip()
+MODEL_GCS_OBJECT = os.getenv("MODEL_GCS_OBJECT", "models/baseline.joblib").strip() or "models/baseline.joblib"
+MODEL_TMP_PATH = Path(os.getenv("MODEL_TMP_PATH", "/tmp/baseline.joblib"))
+
+
+def _ensure_model_available(model_path: Path) -> Path:
+    """Return a local filesystem path to a loadable model.
+
+    - If `model_path` exists, returns it.
+    - If it does not exist and MODEL_GCS_BUCKET is set, downloads the model from GCS to MODEL_TMP_PATH.
+    - Otherwise raises FileNotFoundError.
+    """
+    if model_path.exists():
+        return model_path
+
+    if not MODEL_GCS_BUCKET:
+        raise FileNotFoundError(f"Model not found: {model_path}. Train it first.")
+
+    # Lazy import so local dev works without cloud deps unless this path is used.
+    try:
+        from google.cloud import storage  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "google-cloud-storage is required to download the model from GCS. "
+            "Install it (e.g., `uv add google-cloud-storage`)."
+        ) from e
+
+    # Ensure parent exists (Cloud Run writable location should be /tmp).
+    MODEL_TMP_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    client = storage.Client()
+    bucket = client.bucket(MODEL_GCS_BUCKET)
+    blob = bucket.blob(MODEL_GCS_OBJECT)
+
+    try:
+        blob.download_to_filename(str(MODEL_TMP_PATH))
+    except Exception as e:
+        raise FileNotFoundError(
+            f"Model not found locally at {model_path} and failed to download "
+            f"gs://{MODEL_GCS_BUCKET}/{MODEL_GCS_OBJECT} to {MODEL_TMP_PATH}: {e}"
+        )
+
+    if not MODEL_TMP_PATH.exists():
+        raise FileNotFoundError(
+            f"Model not found locally at {model_path} and download produced no file at {MODEL_TMP_PATH}."
+        )
+
+    return MODEL_TMP_PATH
+
 
 # --- Monitoring (drift + data quality reports) ---
 MONITORING_REPORT_PATH = Path(os.getenv("MONITORING_REPORT_PATH", "reports/data_drift_report.html"))
@@ -133,12 +190,16 @@ _model = None
 
 
 def get_model(model_path: Path = DEFAULT_MODEL_PATH):
-    """Load and cache the model."""
+    """Load and cache the model.
+
+    Backwards compatible:
+    - Load from `model_path` if present.
+    - If missing and MODEL_GCS_BUCKET is set, download from GCS to MODEL_TMP_PATH and load.
+    """
     global _model
     if _model is None:
-        if not model_path.exists():
-            raise FileNotFoundError(f"Model not found: {model_path}. Train it first.")
-        _model = load(model_path)
+        resolved_path = _ensure_model_available(model_path)
+        _model = load(resolved_path)
     return _model
 
 

@@ -619,7 +619,7 @@ When we are ready to integrate changes, the developer uses pre-commit hooks befo
 
 For cloud deployment, we kept it simple: when we push to main, Cloud Build is triggered. Cloud Build then builds our Docker image and pushes it to Artifact Registry. From there, Cloud Run pulls the newest image and serves our FastAPI inference service as an HTTP endpoint. The trained model is bundles directly inside the Docker image. Cloud Logging then automatically collects logs from Cloud Run. 
 
-In addition, we have a few optional, developer-only outputs that are not part of the user inference flow. We can generate profiling reports by running cProfile on our main scripts and visualizing the results with SnakeViz, so we can see where runtime is spent. We also implemented data drift monitoring with Evidently, which we run manually to evaluate how robust the system is under distribution shifts. During development we also used GCS + DVC for experimental data versioning and Compute Engine for ad-hoc experimentation/setup, but these are not part of the final inference runtime on Cloud Run.
+In addition, we have a few optional, developer-only outputs that are not part of the user inference flow. We can generate profiling reports by running cProfile on our main scripts and visualizing the results with SnakeViz, so we can see where runtime is spent. We also implemented data drift monitoring with Evidently, which we run manually to evaluate how robust the system is under distribution shifts. During development we also used GCS + DVC for experimental data versioning and Compute Engine for ad-hoc experimentation/setup, but these are not part of the final inference on Cloud Run.
 
 ### Question 30
 
@@ -658,6 +658,7 @@ Another issue was following best practices around Github/version control in gene
 Student s224345 was responsible for setting up cookie cutter template, CLI commands, building local dockerfiles, building unit testing for data code and model/training, ensuring code coverage.
 Student s224343 was responsible for setting up logging for the project, linking it to W&B, setting up continous integration workflows (General CI, caching, multi-os, pre commit hooks), developing the API integration and load testing.
 Student Jacob
-Student Oskar
+Student s225207 was responsible for setting up the drift/monitoring pipeline in src/mlops_course_project/data_drift.py (Evidently) and extending src/mlops_course_project/api.py to support monitoring/report functionality and cloud functionality. They also implemented profiling using cProfile and inspected the results using SnakeViz to identify where runtime was spent. Also, they contributed to related Docker/packaging adjustments, and various other smaller tasks.
+
 All group members contributed to coding practices, prokect planning, keeping track of dependencies, and other various tasks.
 We have primarily used Copilot as an AI assistant for debugging and writing code, it even produced a commit, to create a draft of an implementation. Also, ChatGPT and Copilot was used for general troubleshooting along the way, as well as for report writing.

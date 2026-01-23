@@ -12,7 +12,7 @@
 - [X] Keep `requirements*.txt` or `pyproject.toml` up-to-date (M2+M6)
 - [X] Follow coding practices (pep8) (M7)
 - [X] Add type hints + document essential parts (M7)
-- [ ] Setup version control for data / part of data (M8) --- Jacob
+- [X] Setup version control for data / part of data (M8) --- Jacob
 - [ ] Add CLI commands where it makes sense (M9) --- Kelvin
 - [X] Construct one or more dockerfiles (M10) --- Kelvin
 - [X] Build dockerfiles locally and verify they work (M10) --- Kelvin
@@ -34,11 +34,11 @@
 - [X] Pre-commit hooks (M18) --- Christian
 - [ ] Workflow triggers when data changes (M19)
 - [ ] Workflow triggers when model registry changes (M19)
-- [ ] Create GCP bucket for data + connect to DVC (M21) --- Jacob
-- [ ] Auto-build docker images workflow (M21) --- Jacob
-- [ ] Run training in GCP (Engine or Vertex AI) (M21) --- Jacob
+- [X] Create GCP bucket for data + connect to DVC (M21) --- Jacob
+- [X] Auto-build docker images workflow (M21) --- Jacob
+- [X] Run training in GCP (Engine or Vertex AI) (M21) --- Jacob
 - [ ] FastAPI inference app (M22) --- Christian
-- [ ] Deploy model in GCP (Functions or Run) (M23) --- Jacob
+- [X] Deploy model in GCP (Functions or Run) (M23) --- Jacob
 - [ ] API tests + CI for API tests (M24) --- Christian
 - [ ] Load testing (M24) --- Christian + Oskar
 - [ ] Specialized deployment API (ONNX/BentoML) (M25)

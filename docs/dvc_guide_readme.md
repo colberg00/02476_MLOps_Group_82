@@ -3,7 +3,7 @@
 This project uses **DVC** to keep data handling *disciplined* and *explicit*,
 without committing large data files to Git.
 
-⚠️ This is **not a full production-ready DVC setup**.  
+⚠️ This is **not a full production-ready DVC setup**.
 It is a **conceptual and local-only workflow**, meant to enforce good habits
 and make it clear **which data is used where**.
 
@@ -17,7 +17,7 @@ and make it clear **which data is used where**.
 4. **Re-track data with DVC if it changes**
 5. **Be explicit when data is used for training or testing**
 
-That’s it.  
+That’s it.
 This setup is about *discipline*, not automation.
 
 ---
@@ -54,7 +54,7 @@ If the raw dataset is updated (new rows, cleaned data, new version):
 
 1. Replace the file in data/raw/
 2. Re-track it with DVC:
-    
+
     uv run dvc add data/raw/news_urls.csv
 
 3. Commit only the updated .dvc file:

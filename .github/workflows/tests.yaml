@@ -46,4 +46,3 @@ jobs:
             logs/
             .pytest_cache/
           if-no-files-found: ignore
-

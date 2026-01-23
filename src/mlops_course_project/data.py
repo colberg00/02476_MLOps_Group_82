@@ -161,11 +161,11 @@ class MyDataset(Dataset):
     def preprocess(self, output_folder: Path, cfg: SplitConfig = SplitConfig()) -> None:
         preferred = self.data_path / RAW_FILENAME
         """Preprocess dataset: filter by outlet, extract slugs, and create splits.
-        
+
         Args:
             output_folder: Directory to save processed splits.
             cfg: Configuration for train/val/test split ratios.
-            
+
         Raises:
             ValueError: If no data remains after filtering.
         """

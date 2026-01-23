@@ -17,3 +17,9 @@ processed_dir: data/processed
 model_out: ${hydra:runtime.output_dir}/model.joblib
 metrics_out: ${hydra:runtime.output_dir}/metrics.json
 train_log: ${hydra:runtime.output_dir}/train.log
+
+# Weights & Biases (wandb) experiment logging
+# Set wandb_mode to "disabled" to turn off logging, "offline" to log locally, or "online" for cloud
+wandb_project: news-classifier
+wandb_entity: null
+wandb_mode: online

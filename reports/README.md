@@ -688,7 +688,7 @@ Another issue was following best practices around Github/version control in gene
 Student s224345 was responsible for setting up cookie cutter template, CLI commands, building local dockerfiles, building unit testing for data code and model/training, ensuring code coverage.
 Student s224343 was responsible for setting up logging for the project, linking it to W&B, setting up continous integration workflows (General CI, caching, multi-os, pre commit hooks), developing the API integration and load testing.
 
-Student Jacob
+Student s223463 was primarily responsible for the cloud-related work in the project. This included setting up and experimenting with GCP services (Cloud Build, Artifact Registry, Cloud Run, Cloud Storage, and Compute Engine), deploying the inference API, and handling cloud-based debugging and experimentation. He was also responsible for the DVC setup and documenting cloud usage in the report.
 
 Student s225207 was responsible for setting up the drift/monitoring pipeline in src/mlops_course_project/data_drift.py (Evidently) and extending src/mlops_course_project/api.py to support monitoring/report functionality and cloud functionality. They also implemented profiling using cProfile and inspected the results using SnakeViz to identify where runtime was spent. Also, they contributed to related Docker/packaging adjustments, and various other smaller tasks. Lastly, they setup Hydra and the use of hydra configuration files to ensure higher level of reproducibility.
 

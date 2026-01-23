@@ -81,8 +81,11 @@ def _write_prediction_event(row: dict) -> None:
     For backwards compatibility with existing local pipelines, we also mirror to the local CSV
     when running without GCS.
     """
-    ts = row.get("time") or datetime.now(timezone.utc).isoformat()
-    event_name = f"{ts}_{uuid.uuid4().hex}.json"
+    # Keep the human-readable ISO timestamp in the event payload,
+    # but use a filesystem-safe timestamp for the filename (Windows cannot handle ':' in filenames).
+    ts_payload = row.get("time") or datetime.now(timezone.utc).isoformat()
+    ts_file = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")  # e.g. 20260123T111303913374Z
+    event_name = f"{ts_file}_{uuid.uuid4().hex}.json"
 
     if PREDICTION_GCS_BUCKET:
         # Import lazily so local dev works without the dependency unless cloud logging is enabled.
@@ -110,10 +113,14 @@ def _write_prediction_event(row: dict) -> None:
     # Local mode: write events to disk
     PREDICTION_EVENTS_DIR.mkdir(parents=True, exist_ok=True)
     event_path = PREDICTION_EVENTS_DIR / event_name
-    event_path.write_text(json.dumps(row, ensure_ascii=False), encoding="utf-8")
+
+    # Ensure the payload has the ISO timestamp (human-readable + timezone-aware)
+    payload = dict(row)
+    payload["time"] = ts_payload
+    event_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
     # Backwards compatible local mirror (your existing drift script can keep reading the CSV)
-    _append_prediction_row(row)
+    _append_prediction_row(payload)
 
 
 app = FastAPI(

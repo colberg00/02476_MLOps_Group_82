@@ -1,11 +1,17 @@
-FROM ghcr.io/astral-sh/uv:python3.12-alpine AS base
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
 
 COPY uv.lock uv.lock
 COPY pyproject.toml pyproject.toml
 
 RUN uv sync --frozen --no-install-project
 
+# DVC is used in Cloud Run to materialize reference data from the shared remote (GCS)
+RUN python -m pip install --no-cache-dir "dvc[gcs]"
+
 COPY src src/
+# Include DVC metadata (small files) so the service can `dvc pull` in Cloud Run
+COPY .dvc .dvc
+COPY data data
 COPY README.md README.md
 COPY LICENSE LICENSE
 
